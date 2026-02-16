@@ -5,7 +5,8 @@
 
 import { getCookie } from './utils';
 
-const BASE = import.meta.env.VITE_SCHEDULER_API_URL || 'http://localhost:8001';
+// Default to Cratos API host port 9101 (see Cratos docker-compose / README)
+const BASE = import.meta.env.VITE_SCHEDULER_API_URL || 'http://localhost:9101';
 
 // ── Request helpers ──────────────────────────────────────────────────────────
 

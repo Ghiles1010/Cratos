@@ -3,7 +3,7 @@ services:
     build:
       context: .
       args:
-        - VITE_SCHEDULER_API_URL=${VITE_SCHEDULER_API_URL:-http://localhost:8001}
+        - VITE_SCHEDULER_API_URL=${VITE_SCHEDULER_API_URL:-http://localhost:9101}
     ports:
       - "3001:3001"
     environment:

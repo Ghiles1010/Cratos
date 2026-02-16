@@ -63,10 +63,10 @@ Cratos UI is a modern web interface for managing and monitoring tasks in the Cra
 
 ### Environment Configuration
 
-Set the Cratos API URL (optional, defaults to http://localhost:8001):
+Set the Cratos API URL (optional, defaults to http://localhost:9101):
 
 ```bash
-export VITE_SCHEDULER_API_URL=http://your-cratos-api:8001
+export VITE_SCHEDULER_API_URL=http://your-cratos-api:9101
 docker compose build
 docker compose up -d
 ```
