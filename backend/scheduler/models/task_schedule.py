@@ -143,19 +143,35 @@ class TaskSchedule(models.Model):
 
     def pause(self):
         """Pause a recurring task."""
-        if self.schedule_type != ScheduleType.ONE_OFF:
-            self.is_paused = True
-            self.save(update_fields=['is_paused', 'updated_at'])
+        if not self.is_recurring:
+            raise ValueError("Only recurring tasks can be paused.")
+        self.is_paused = True
+        self.save(update_fields=['is_paused', 'updated_at'])
 
     def resume(self):
         """Resume a paused recurring task."""
         from ..services.scheduling import compute_next_run
 
+        if not self.is_recurring:
+            raise ValueError("Only recurring tasks can be resumed.")
         if self.is_paused:
             self.is_paused = False
             self.status = TaskStatus.SCHEDULED
             self.next_run_at = compute_next_run(self)
             self.save(update_fields=['is_paused', 'status', 'next_run_at', 'updated_at'])
+
+    def retry(self):
+        """Re-schedule a failed task from scratch."""
+        from ..services.scheduling import compute_next_run
+
+        if self.status != TaskStatus.FAILED:
+            raise ValueError("Only failed tasks can be retried.")
+        self.status = TaskStatus.SCHEDULED
+        self.retry_count = 0
+        self.result = None
+        self.completed_at = None
+        self.next_run_at = compute_next_run(self)
+        self.save(update_fields=['status', 'retry_count', 'result', 'completed_at', 'next_run_at', 'updated_at'])
 
     # ── Properties ───────────────────────────────────────────────────────
 

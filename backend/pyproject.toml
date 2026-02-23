@@ -17,3 +17,9 @@ dependencies = [
     "redis>=4.5",
     "requests>=2.31",
 ]
+
+[dependency-groups]
+dev = [
+    "django-stubs>=5.0",
+    "djangorestframework-stubs>=3.14",
+]

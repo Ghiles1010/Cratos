@@ -1,5 +1,8 @@
 """Task views for the standalone scheduler."""
 
+from typing import Callable
+from typing import Any
+
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -7,7 +10,6 @@ from rest_framework.response import Response
 
 from .models import TaskSchedule, TaskStatus
 from .serializers import TaskScheduleSerializer
-from .services.scheduling import compute_next_run
 
 
 class TaskViewSet(viewsets.ModelViewSet):
@@ -23,6 +25,14 @@ class TaskViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
 
+    def _perform_task_action(self, action: Callable[[TaskSchedule], Any]) -> Response:
+        task = self.get_object()
+        try:
+            action(task)
+        except ValueError as e:
+            return Response({'detail': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        return Response(self.get_serializer(task).data, status=status.HTTP_200_OK)
+
     # ── Custom actions ───────────────────────────────────────────────────
 
     @action(detail=False, methods=['get'], url_path='scheduled')
@@ -37,48 +47,16 @@ class TaskViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], url_path='cancel')
     def cancel_task(self, request, task_id=None):
-        task = self.get_object()
-        task.cancel()
-        return Response(self.get_serializer(task).data, status=status.HTTP_200_OK)
+        return self._perform_task_action(TaskSchedule.cancel)
 
     @action(detail=True, methods=['post'], url_path='pause')
     def pause_task(self, request, task_id=None):
-        task = self.get_object()
-        if not task.is_recurring:
-            return Response(
-                {'detail': 'Only recurring tasks can be paused.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        task.pause()
-        return Response(self.get_serializer(task).data, status=status.HTTP_200_OK)
+        return self._perform_task_action(TaskSchedule.pause)
 
     @action(detail=True, methods=['post'], url_path='resume')
     def resume_task(self, request, task_id=None):
-        task = self.get_object()
-        if not task.is_recurring:
-            return Response(
-                {'detail': 'Only recurring tasks can be resumed.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        task.resume()
-        return Response(self.get_serializer(task).data, status=status.HTTP_200_OK)
+        return self._perform_task_action(TaskSchedule.resume)
 
     @action(detail=True, methods=['post'], url_path='retry')
     def retry_task(self, request, task_id=None):
-        task = self.get_object()
-        if task.status != TaskStatus.FAILED:
-            return Response(
-                {'detail': 'Only failed tasks can be retried.'},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        task.status = TaskStatus.SCHEDULED
-        task.retry_count = 0
-        task.result = None
-        task.completed_at = None
-        task.next_run_at = compute_next_run(task)
-        task.save(update_fields=[
-            'status', 'retry_count', 'result', 'completed_at',
-            'next_run_at', 'updated_at',
-        ])
-        return Response(self.get_serializer(task).data, status=status.HTTP_200_OK)
-
+        return self._perform_task_action(TaskSchedule.retry)
