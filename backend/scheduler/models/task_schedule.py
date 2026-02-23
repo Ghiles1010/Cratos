@@ -1,29 +1,10 @@
 import uuid
-from django.db import models
+
 from django.conf import settings
+from django.db import models
 from django.utils import timezone
 
-
-class TaskStatus(models.TextChoices):
-    SCHEDULED = 'scheduled', 'Scheduled'
-    PENDING = 'pending', 'Pending'
-    RUNNING = 'running', 'Running'
-    COMPLETED = 'completed', 'Completed'
-    FAILED = 'failed', 'Failed'
-    CANCELLED = 'cancelled', 'Cancelled'
-
-
-class ScheduleType(models.TextChoices):
-    ONE_OFF = 'one_off', 'One-off'
-    CRON = 'cron', 'Cron'
-    INTERVAL = 'interval', 'Interval'
-
-
-class RetryPolicy(models.TextChoices):
-    NONE = 'none', 'No retries'
-    FIXED = 'fixed', 'Fixed delay'
-    EXPONENTIAL = 'exponential', 'Exponential backoff'
-    LINEAR = 'linear', 'Linear backoff'
+from .enums import RetryPolicy, ScheduleType, TaskStatus
 
 
 class TaskSchedule(models.Model):
@@ -39,6 +20,10 @@ class TaskSchedule(models.Model):
     callback_url = models.URLField(
         blank=True, null=True,
         help_text="URL to POST to when task execution is triggered (optional if using WebSocket gateway)"
+    )
+    webhook_secret = models.CharField(
+        max_length=255, blank=True, default='',
+        help_text="Optional secret for HMAC-SHA256 webhook signature (X-Cratos-Signature header)",
     )
 
     # ── Scheduling ───────────────────────────────────────────────────────
@@ -132,19 +117,16 @@ class TaskSchedule(models.Model):
     # ── Lifecycle ────────────────────────────────────────────────────────
 
     def save(self, *args, **kwargs):
-        from .services.scheduling import compute_next_run  # avoid circular
+        from ..services.scheduling import compute_next_run  # avoid circular
 
         is_new = self._state.adding
 
-        # Default schedule_time to now for immediate one-off tasks
         if is_new and self.callback_url and not self.schedule_time:
             self.schedule_time = timezone.now()
 
-        # Compute next_run_at when creating or when relevant fields change
         if is_new or not kwargs.get('update_fields'):
             self.next_run_at = compute_next_run(self)
 
-        # Auto-set timestamps based on status
         if self.status == TaskStatus.RUNNING and not self.started_at:
             self.started_at = timezone.now()
         elif self.status in (TaskStatus.COMPLETED, TaskStatus.FAILED) and not self.completed_at:
@@ -167,7 +149,7 @@ class TaskSchedule(models.Model):
 
     def resume(self):
         """Resume a paused recurring task."""
-        from .services.scheduling import compute_next_run
+        from ..services.scheduling import compute_next_run
 
         if self.is_paused:
             self.is_paused = False
@@ -192,76 +174,3 @@ class TaskSchedule(models.Model):
         if self.started_at and self.completed_at:
             return (self.completed_at - self.started_at).total_seconds()
         return None
-
-
-class ExecutionStatus(models.TextChoices):
-    """Status of a single task execution."""
-    PENDING = 'pending', 'Pending'
-    RUNNING = 'running', 'Running'
-    SUCCESS = 'success', 'Success'
-    FAILED = 'failed', 'Failed'
-    TIMEOUT = 'timeout', 'Timeout'
-
-
-class TaskExecution(models.Model):
-    """
-    Execution history for a task.
-    
-    Each time a task is dispatched and executed, a TaskExecution record
-    is created to track the outcome, duration, errors, and response details.
-    """
-
-    id = models.BigAutoField(primary_key=True)
-    task = models.ForeignKey(
-        TaskSchedule,
-        on_delete=models.CASCADE,
-        related_name='executions',
-        db_index=True,
-    )
-    execution_number = models.PositiveIntegerField(
-        help_text="Sequential execution number for this task (1, 2, 3, ...)",
-    )
-    status = models.CharField(
-        max_length=20,
-        choices=ExecutionStatus.choices,
-        default=ExecutionStatus.PENDING,
-    )
-    started_at = models.DateTimeField(db_index=True)
-    completed_at = models.DateTimeField(null=True, blank=True)
-    duration_seconds = models.FloatField(null=True, blank=True)
-
-    # HTTP response details
-    http_status_code = models.IntegerField(null=True, blank=True)
-    http_response_body = models.TextField(null=True, blank=True, max_length=10000)
-    http_response_headers = models.JSONField(null=True, blank=True)
-
-    # Error details
-    error_message = models.TextField(null=True, blank=True, max_length=5000)
-    error_type = models.CharField(max_length=255, null=True, blank=True)
-    error_traceback = models.TextField(null=True, blank=True, max_length=20000)
-
-    # Retry info
-    retry_count = models.PositiveIntegerField(default=0)
-    is_retry = models.BooleanField(default=False)
-
-    # Metadata
-    created_at = models.DateTimeField(auto_now_add=True)
-
-    class Meta:
-        db_table = 'orkera_task_execution'
-        ordering = ['-started_at']
-        indexes = [
-            models.Index(fields=['task', '-started_at']),
-            models.Index(fields=['status', '-started_at']),
-            models.Index(fields=['started_at']),
-        ]
-        unique_together = [['task', 'execution_number']]
-
-    def __str__(self):
-        return f"{self.task.task_name} execution #{self.execution_number} - {self.status}"
-
-    def save(self, *args, **kwargs):
-        # Calculate duration if both timestamps are set
-        if self.started_at and self.completed_at:
-            self.duration_seconds = (self.completed_at - self.started_at).total_seconds()
-        super().save(*args, **kwargs)
