@@ -24,7 +24,7 @@ export interface MetricsResponse {
   recent_executions: RecentExecution[];
 }
 
-const BASE = import.meta.env.VITE_SCHEDULER_API_URL || 'http://localhost:8001';
+const BASE = import.meta.env.VITE_SCHEDULER_API_URL || 'http://localhost:9101';
 
 export function useMetrics() {
   return useQuery<MetricsResponse>({

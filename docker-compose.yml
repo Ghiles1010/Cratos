@@ -1,18 +1,180 @@
+# Cratos – Docker Compose
+
 services:
+  # ── PostgreSQL ──
+  cratos-postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: cratos
+      POSTGRES_USER: cratos
+      POSTGRES_PASSWORD: cratos_password
+    volumes:
+      - cratos_pg_data:/var/lib/postgresql/data
+    ports:
+      - "${CRATOS_POSTGRES_PORT:-9433}:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U cratos"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Redis ──
+  cratos-redis:
+    image: redis:7-alpine
+    ports:
+      - "${CRATOS_REDIS_PORT:-9638}:6379"
+    volumes:
+      - cratos_redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── Django API ──
+  cratos-web:
+    build: ./backend
+    command: python manage.py runserver 0.0.0.0:8001
+    volumes:
+      - ./backend:/app
+    ports:
+      - "${CRATOS_API_PORT:-9101}:8001"
+    restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - .env
+    environment:
+      - DJANGO_DEBUG=True
+      - DB_NAME=cratos
+      - DB_USER=cratos
+      - DB_PASSWORD=cratos_password
+      - DB_HOST=cratos-postgres
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://cratos-redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://cratos-redis:6379/0
+    depends_on:
+      cratos-postgres:
+        condition: service_healthy
+      cratos-redis:
+        condition: service_healthy
+
+  # ── Celery Worker ──
+  cratos-worker:
+    build: ./backend
+    command: celery -A config worker --loglevel=info
+    volumes:
+      - ./backend:/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - .env
+    environment:
+      - DJANGO_DEBUG=True
+      - DB_NAME=cratos
+      - DB_USER=cratos
+      - DB_PASSWORD=cratos_password
+      - DB_HOST=cratos-postgres
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://cratos-redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://cratos-redis:6379/0
+      - WEBSOCKET_GATEWAY_URL=http://websocket-gateway:8000
+    restart: unless-stopped
+    depends_on:
+      cratos-postgres:
+        condition: service_healthy
+      cratos-redis:
+        condition: service_healthy
+      websocket-gateway:
+        condition: service_started
+
+  # ── Celery Beat ──
+  cratos-beat:
+    build: ./backend
+    command: celery -A config beat --loglevel=info --pidfile=/tmp/celerybeat.pid
+    volumes:
+      - ./backend:/app
+    env_file:
+      - .env
+    environment:
+      - DJANGO_DEBUG=True
+      - DB_NAME=cratos
+      - DB_USER=cratos
+      - DB_PASSWORD=cratos_password
+      - DB_HOST=cratos-postgres
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://cratos-redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://cratos-redis:6379/0
+    restart: unless-stopped
+    depends_on:
+      cratos-postgres:
+        condition: service_healthy
+      cratos-redis:
+        condition: service_healthy
+
+  # ── Dispatcher Loop (backup if Beat fails) ──
+  cratos-dispatcher:
+    build: ./backend
+    command: python manage.py run_dispatcher_loop --interval=10
+    volumes:
+      - ./backend:/app
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    env_file:
+      - .env
+    environment:
+      - DJANGO_DEBUG=True
+      - DB_NAME=cratos
+      - DB_USER=cratos
+      - DB_PASSWORD=cratos_password
+      - DB_HOST=cratos-postgres
+      - DB_PORT=5432
+      - CELERY_BROKER_URL=redis://cratos-redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://cratos-redis:6379/0
+      - WEBSOCKET_GATEWAY_URL=http://websocket-gateway:8000
+    restart: unless-stopped
+    depends_on:
+      cratos-postgres:
+        condition: service_healthy
+      cratos-redis:
+        condition: service_healthy
+      websocket-gateway:
+        condition: service_started
+
+  # ── FastAPI WebSocket Gateway ──
+  websocket-gateway:
+    build:
+      context: ./backend
+      dockerfile: websocket_gateway/Dockerfile
+    ports:
+      - "${CRATOS_WS_PORT:-9100}:8000"
+    environment:
+      - PORT=8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── React UI ──
   cratos-ui:
     build:
-      context: .
+      context: ./ui
       args:
         - VITE_SCHEDULER_API_URL=${VITE_SCHEDULER_API_URL:-http://localhost:9101}
     ports:
-      - "3001:3001"
+      - "${CRATOS_UI_PORT:-3001}:3001"
     environment:
       - NODE_ENV=production
     restart: unless-stopped
-    container_name: cratos-ui
     extra_hosts:
-      - 'host.docker.internal:host-gateway'
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      - cratos-web
 
-networks:
-  cratos-ui-network:
-    external: false
+volumes:
+  cratos_pg_data:
+  cratos_redis_data:

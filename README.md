@@ -1,20 +1,18 @@
-# Cratos UI
+# Cratos
 
 <div align="center">
 
-**A modern, responsive web interface for the Cratos task scheduler**
+**Self-hosted task scheduler with a built-in web UI**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
 [![React](https://img.shields.io/badge/React-18.2+-61dafb.svg)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.2+-3178c6.svg)](https://www.typescriptlang.org/)
 
 </div>
 
 ---
 
-## Overview
-
-Cratos UI is a modern web interface for managing and monitoring tasks in the Cratos scheduler. Built with React, TypeScript, and Tailwind CSS, it provides an intuitive way to create, schedule, and monitor background jobs.
+Schedule webhook callbacks — one-off, cron, or interval — with retry policies, execution history, and real-time updates. Everything runs in a single `docker compose up`.
 
 ## Screenshots
 
@@ -29,73 +27,139 @@ Cratos UI is a modern web interface for managing and monitoring tasks in the Cra
 
 ## Features
 
-- **Task Management** - View, create, edit, and delete tasks with pagination and filtering
-- **Dashboard & Metrics** - Real-time task statistics, execution history charts, and service health monitoring
-- **Flexible Scheduling** - One-off tasks, cron expressions, and interval-based scheduling with timezone support
-- **Task Controls** - Pause/resume, cancel, retry, and view execution history
-- **Modern UI/UX** - Clean, responsive design with real-time updates and overdue task indicators
-- **Authentication** - Secure login system and API key management
+- **Flexible Scheduling** — one-off, cron expressions, and interval-based tasks with timezone support
+- **Retry Policies** — fixed, linear, and exponential backoff
+- **Execution History** — full audit trail with HTTP response details, timings, and error traces
+- **Real-time Updates** — WebSocket gateway for live task execution events
+- **Web UI** — manage tasks, view metrics, and handle API keys from the browser
+- **REST API** — full programmatic access; use directly or via the [Python SDK](https://github.com/Ghiles1010/Cratos-SDK)
+
+## Repository Structure
+
+```
+cratos/
+├── backend/          # Django API, Celery workers, WebSocket gateway
+├── ui/               # React + TypeScript frontend
+├── docker-compose.yml
+├── .env.example
+└── Taskfile.yml
+```
 
 ## Quick Start
 
 ### Prerequisites
 
 - Docker and Docker Compose
-- Cratos backend running (see [Cratos](https://github.com/Ghiles1010/Cratos))
 
-### First Time Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Ghiles1010/Cratos-UI.git
-   cd Cratos-UI
-   ```
-
-2. **Build and start**
-   ```bash
-   docker compose build
-   docker compose up -d
-   ```
-
-3. **Access the UI**
-   - Open http://localhost:3001
-   - Login with your Cratos credentials
-
-### Environment Configuration
-
-Set the Cratos API URL (optional, defaults to http://localhost:9101):
+### Setup
 
 ```bash
-export VITE_SCHEDULER_API_URL=http://your-cratos-api:9101
-docker compose build
-docker compose up -d
+git clone https://github.com/Ghiles1010/Cratos.git
+cd Cratos
+cp .env.example .env
+task init
 ```
 
-### Service Management
+`task init` builds images, starts services, runs migrations, creates an admin user (`admin` / `admin`), and registers the dispatcher.
+
+> No `task` CLI? Run the steps manually:
+> ```bash
+> docker compose up -d --build
+> docker compose exec cratos-web python manage.py migrate
+> docker compose exec cratos-web python manage.py createsuperuser
+> docker compose exec cratos-web python manage.py ensure_dispatcher_periodic_task
+> ```
+
+### Access
+
+| Service | URL |
+|---------|-----|
+| Web UI  | http://localhost:3001 |
+| REST API | http://localhost:9101 |
+| WebSocket Gateway | ws://localhost:9100 |
+
+## Configuration
+
+Copy `.env.example` to `.env` to customize ports:
 
 ```bash
-docker compose up -d      # Start service
-docker compose down       # Stop service
-docker compose logs -f    # View logs
-docker compose restart    # Restart service
+CRATOS_API_PORT=9101
+CRATOS_WS_PORT=9100
+CRATOS_POSTGRES_PORT=9433
+CRATOS_REDIS_PORT=9638
+CRATOS_UI_PORT=3001
+
+# URL the browser uses to reach the API (must be host-accessible)
+VITE_SCHEDULER_API_URL=http://localhost:9101
+```
+
+> **Note:** `VITE_SCHEDULER_API_URL` is baked into the frontend at build time. If you change it, rebuild the UI container: `docker compose build cratos-ui`.
+
+## API Usage
+
+### Get your API key
+
+```bash
+docker compose exec cratos-web python manage.py get_api_key \
+  --username admin --password admin
+```
+
+### Schedule a task
+
+```bash
+curl -X POST http://localhost:9101/api/tasks/ \
+  -H "Authorization: Api-Key YOUR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task_name": "daily_report",
+    "callback_url": "https://example.com/webhook",
+    "schedule_type": "cron",
+    "cron_expression": "0 9 * * *"
+  }'
+```
+
+### List tasks
+
+```bash
+curl http://localhost:9101/api/tasks/ \
+  -H "Authorization: Api-Key YOUR_API_KEY"
 ```
 
 ## Development
 
-### Local Development
+### Backend
 
 ```bash
-npm install
-npm run dev
+docker compose up cratos-postgres cratos-redis -d
+cd backend
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py runserver
 ```
 
-The UI will be available at http://localhost:3001
+### Frontend
+
+```bash
+cd ui
+npm install
+npm run dev   # http://localhost:3001
+```
+
+## Common Commands
+
+```bash
+task up              # Start all services
+task down            # Stop all services
+task logs            # Tail all logs
+task migrate         # Run DB migrations
+task shell           # Django shell
+task ui:dev          # Start frontend dev server
+```
 
 ## Related Projects
 
-- **[Cratos](https://github.com/Ghiles1010/Cratos)** - Backend task scheduler service
-- **[Cratos SDK](https://github.com/Ghiles1010/Cratos-SDK)** - Python SDK for easy integration
+- **[Cratos SDK](https://github.com/Ghiles1010/Cratos-SDK)** — Python SDK for programmatic access
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License — see [LICENSE](LICENSE) file for details.

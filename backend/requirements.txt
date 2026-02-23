@@ -1,0 +1,23 @@
+# Django
+Django>=4.2,<5.0
+djangorestframework>=3.14
+django-cors-headers>=4.0
+
+# Celery
+celery>=5.3
+django-celery-beat>=2.5
+redis>=4.5
+
+# Database
+psycopg2-binary>=2.9
+
+# HTTP
+requests>=2.31
+
+# Cron
+croniter>=1.3
+cron-descriptor>=1.4
+
+# Production
+gunicorn>=21.0
+

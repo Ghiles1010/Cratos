@@ -2,52 +2,116 @@
 version: '3'
 
 vars:
-  SERVICE: cratos-ui
+  DB_USER: cratos
 
 tasks:
   default:
-    desc: Cratos UI – help
+    desc: Cratos – help
     cmds:
       - task --list
 
-  install:
-    desc: Install dependencies
-    cmds:
-      - npm install
-
-  dev:
-    desc: Start development server
-    cmds:
-      - npm run dev
+  # ── Docker ──
 
   build:
-    desc: Build the Docker image
+    desc: Build all Docker images
     cmds:
       - docker compose build
 
   up:
-    desc: Start the Docker container
+    desc: Start all services
     cmds:
+      - echo "Starting Cratos..."
       - docker compose up -d
-      - echo "Cratos UI is running on http://localhost:3001"
+      - task: wait-for-services
+      - echo "Cratos is ready – UI http://localhost:3001 | API http://localhost:9101"
 
   down:
-    desc: Stop the Docker container
+    desc: Stop all services
     cmds:
       - docker compose down
 
   restart:
-    desc: Restart the Docker container
+    desc: Restart all services
     cmds:
       - docker compose restart
 
-  logs:
-    desc: Tail logs from the container
-    cmds:
-      - docker compose logs -f {{.SERVICE}}
-
   clean:
-    desc: Stop containers and remove images
+    desc: Stop all services, remove containers, networks, and volumes
     cmds:
-      - docker compose down -v --rmi local
+      - docker compose down -v --remove-orphans
 
+  logs:
+    desc: Tail logs from all services
+    cmds:
+      - docker compose logs -f
+
+  wait-for-services:
+    desc: Wait for PostgreSQL and Redis to be ready
+    cmds:
+      - |
+        until docker compose exec -T cratos-postgres pg_isready -U {{.DB_USER}}; do sleep 2; done
+      - |
+        until docker compose exec -T cratos-redis redis-cli ping; do sleep 2; done
+      - echo "Services are ready!"
+
+  # ── Database ──
+
+  migrate:
+    desc: Run database migrations
+    cmds:
+      - docker compose exec cratos-web python manage.py migrate
+
+  makemigrations:
+    desc: Generate migration files
+    cmds:
+      - docker compose exec cratos-web python manage.py makemigrations
+
+  # ── Django ──
+
+  shell:
+    desc: Open Django shell
+    interactive: true
+    cmds:
+      - docker compose exec cratos-web python manage.py shell
+
+  manage:
+    desc: "Run a Django management command (usage: task manage -- <cmd>)"
+    cmds:
+      - docker compose exec cratos-web python manage.py {{.CLI_ARGS}}
+
+  createsuperuser:
+    desc: Create a Django admin superuser
+    cmds:
+      - docker compose exec -e DJANGO_SUPERUSER_PASSWORD=admin cratos-web python manage.py createsuperuser --noinput --username=admin --email=admin@cratos.local
+
+  setup-dispatcher:
+    desc: Register the dispatcher periodic task in Celery Beat
+    cmds:
+      - docker compose exec cratos-web python manage.py ensure_dispatcher_periodic_task
+
+  # ── Frontend ──
+
+  ui:install:
+    desc: Install UI dependencies
+    dir: ui
+    cmds:
+      - npm install
+
+  ui:dev:
+    desc: Start UI development server
+    dir: ui
+    cmds:
+      - npm run dev
+
+  # ── First-time setup ──
+
+  init:
+    desc: Full first-time setup – build, start, migrate, create user, register dispatcher
+    cmds:
+      - task: build
+      - task: up
+      - task: makemigrations
+      - task: migrate
+      - task: createsuperuser
+      - task: setup-dispatcher
+      - echo "Cratos is fully initialized!"
