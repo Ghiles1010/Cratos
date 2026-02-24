@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**Self-hosted task scheduler with a built-in web UI**
+**Self-hosted webhook scheduler with a built-in web UI**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
@@ -12,7 +12,24 @@
 
 ---
 
-Schedule webhook callbacks — one-off, cron, or interval — with retry policies, execution history, and real-time updates. Everything runs in a single `docker compose up`.
+Cratos calls your HTTP endpoints on a schedule. That's it.
+
+Register a URL, pick a schedule (one-off, cron, or interval), and Cratos fires a signed POST request at the right time — with retries, execution history, and a web UI to manage everything. No code to deploy inside Cratos. Your services stay where they are.
+
+## Why not just use...
+
+| | HTTP native | Dynamic API | No code | Self-hosted | No vendor | No per-call cost | HTTP first-class | Scheduling UI | Execution history |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Cron** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Celery Beat** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Windmill** | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
+| **EventBridge** | ⚠️ | ✅ | ⚠️ | ❌ | ❌ | ❌ | ❌ | ⚠️ | ✅ |
+| **Cratos** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+> ⚠️ = possible but not the primary use case
+> EventBridge is built to trigger AWS services (Lambda, SQS, SNS) — calling an external HTTP endpoint requires setting up API Destinations with IAM policies and connection resources
+
+**The sweet spot:** you have services that already expose HTTP endpoints and need something to trigger them reliably on a schedule — without writing code inside a platform, paying per invocation, or depending on AWS.
 
 ## Screenshots
 
@@ -30,20 +47,9 @@ Schedule webhook callbacks — one-off, cron, or interval — with retry policie
 - **Flexible Scheduling** — one-off, cron expressions, and interval-based tasks with timezone support
 - **Retry Policies** — fixed, linear, and exponential backoff
 - **Execution History** — full audit trail with HTTP response details, timings, and error traces
-- **Real-time Updates** — WebSocket gateway for live task execution events
+- **Webhook Signing** — HMAC signatures so your endpoints can verify requests come from Cratos
 - **Web UI** — manage tasks, view metrics, and handle API keys from the browser
 - **REST API** — full programmatic access; use directly or via the [Python SDK](https://github.com/Ghiles1010/Cratos-SDK)
-
-## Repository Structure
-
-```
-cratos/
-├── backend/          # Django API, Celery workers, WebSocket gateway
-├── ui/               # React + TypeScript frontend
-├── docker-compose.yml
-├── .env.example
-└── Taskfile.yml
-```
 
 ## Quick Start
 
@@ -76,24 +82,6 @@ task init
 |---------|-----|
 | Web UI  | http://localhost:3001 |
 | REST API | http://localhost:9101 |
-| WebSocket Gateway | ws://localhost:9100 |
-
-## Configuration
-
-Copy `.env.example` to `.env` to customize ports:
-
-```bash
-CRATOS_API_PORT=9101
-CRATOS_WS_PORT=9100
-CRATOS_POSTGRES_PORT=9433
-CRATOS_REDIS_PORT=9638
-CRATOS_UI_PORT=3001
-
-# URL the browser uses to reach the API (must be host-accessible)
-VITE_SCHEDULER_API_URL=http://localhost:9101
-```
-
-> **Note:** `VITE_SCHEDULER_API_URL` is baked into the frontend at build time. If you change it, rebuild the UI container: `docker compose build cratos-ui`.
 
 ## API Usage
 
@@ -112,17 +100,46 @@ curl -X POST http://localhost:9101/api/tasks/ \
   -H "Content-Type: application/json" \
   -d '{
     "task_name": "daily_report",
-    "callback_url": "https://example.com/webhook",
+    "callback_url": "https://your-service.com/webhooks/daily-report",
     "schedule_type": "cron",
     "cron_expression": "0 9 * * *"
   }'
 ```
+
+Cratos will POST to `callback_url` every day at 9am with a signed JSON payload containing the task metadata. Your endpoint just needs to respond with a 2xx.
 
 ### List tasks
 
 ```bash
 curl http://localhost:9101/api/tasks/ \
   -H "Authorization: Api-Key YOUR_API_KEY"
+```
+
+## Configuration
+
+Copy `.env.example` to `.env` to customize ports:
+
+```bash
+CRATOS_API_PORT=9101
+CRATOS_POSTGRES_PORT=9433
+CRATOS_REDIS_PORT=9638
+CRATOS_UI_PORT=3001
+
+# URL the browser uses to reach the API (must be host-accessible)
+VITE_SCHEDULER_API_URL=http://localhost:9101
+```
+
+> **Note:** `VITE_SCHEDULER_API_URL` is baked into the frontend at build time. If you change it, rebuild the UI container: `docker compose build cratos-ui`.
+
+## Repository Structure
+
+```
+cratos/
+├── backend/          # Django API + Celery workers
+├── ui/               # React + TypeScript frontend
+├── docker-compose.yml
+├── .env.example
+└── Taskfile.yml
 ```
 
 ## Development
