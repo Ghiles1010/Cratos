@@ -1,186 +1,111 @@
 import uuid
-
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-from .enums import RetryPolicy, ScheduleType, TaskStatus
+from models.enums import RetryPolicy, ScheduleType, TaskStatus
 
 
 class TaskSchedule(models.Model):
-    """Model for storing scheduled tasks."""
+    """Persistent representation of a scheduled task."""
 
-    # Primary key
-    task_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    # ── Identity ──────────────────────────────────────────────────────────
 
-    # ── Task details ─────────────────────────────────────────────────────
-    task_name = models.CharField(max_length=255, help_text="Name of the task to execute")
-    task_args = models.JSONField(default=list, help_text="Positional arguments for the task")
-    task_kwargs = models.JSONField(default=dict, help_text="Keyword arguments for the task")
-    callback_url = models.URLField(
-        blank=True, null=True,
-        help_text="URL to POST to when task execution is triggered (optional if using WebSocket gateway)"
-    )
-    webhook_secret = models.CharField(
-        max_length=255, blank=True, default='',
-        help_text="Optional secret for HMAC-SHA256 webhook signature (X-Cratos-Signature header)",
+    task_id = models.UUIDField(
+        primary_key=True,
+        default=uuid.uuid4,
+        editable=False,
     )
 
-    # ── Scheduling ───────────────────────────────────────────────────────
+    # ── Task payload ──────────────────────────────────────────────────────
+
+    task_name = models.CharField(max_length=255)
+    task_args = models.JSONField(default=list)
+    task_kwargs = models.JSONField(default=dict)
+
+    callback_url = models.URLField(blank=True, null=True)
+    webhook_secret = models.CharField(max_length=255, blank=True, default="")
+
+    # ── Scheduling configuration ──────────────────────────────────────────
+
     schedule_type = models.CharField(
         max_length=20,
         choices=ScheduleType.choices,
         default=ScheduleType.ONE_OFF,
-        help_text="Type of schedule: one-off, cron, or interval",
-    )
-    schedule_time = models.DateTimeField(
-        null=True, blank=True,
-        help_text="When to execute (one-off) or first execution (recurring)",
-    )
-    cron_expression = models.CharField(
-        max_length=100, blank=True, default='',
-        help_text="Cron expression, e.g. '*/5 * * * *' (minute hour day month weekday)",
-    )
-    interval_seconds = models.PositiveIntegerField(
-        null=True, blank=True,
-        help_text="Repeat every N seconds (interval schedule)",
-    )
-    ends_at = models.DateTimeField(
-        null=True, blank=True,
-        help_text="Stop recurring execution after this time",
-    )
-    task_timezone = models.CharField(
-        max_length=63, default='UTC',
-        help_text="IANA timezone for schedule interpretation, e.g. 'America/New_York'",
-    )
-    next_run_at = models.DateTimeField(
-        null=True, blank=True, db_index=True,
-        help_text="Next calculated execution time (UTC). Managed by the system.",
-    )
-    last_run_at = models.DateTimeField(
-        null=True, blank=True,
-        help_text="Last time this task was dispatched",
-    )
-    run_count = models.PositiveIntegerField(
-        default=0,
-        help_text="Number of times this task has been dispatched",
-    )
-    is_paused = models.BooleanField(
-        default=False,
-        help_text="Pause recurring task without deleting it",
     )
 
-    # ── Retry configuration ──────────────────────────────────────────────
+    schedule_time = models.DateTimeField(null=True, blank=True)
+    cron_expression = models.CharField(max_length=100, blank=True, default="")
+    interval_seconds = models.PositiveIntegerField(null=True, blank=True)
+
+    ends_at = models.DateTimeField(null=True, blank=True)
+    task_timezone = models.CharField(max_length=63, default="UTC")
+
+    # ── Runtime tracking ──────────────────────────────────────────────────
+
+    next_run_at = models.DateTimeField(null=True, db_index=True)
+    last_run_at = models.DateTimeField(null=True, blank=True)
+
+    run_count = models.PositiveIntegerField(default=0)
+    retry_count = models.PositiveIntegerField(default=0)
+
     retry_policy = models.CharField(
         max_length=20,
         choices=RetryPolicy.choices,
         default=RetryPolicy.NONE,
-        help_text="Retry strategy on callback failure",
-    )
-    max_retries = models.PositiveIntegerField(
-        default=0,
-        help_text="Maximum number of retry attempts (0 = no retries)",
-    )
-    retry_delay_seconds = models.PositiveIntegerField(
-        default=60,
-        help_text="Base delay between retries in seconds",
-    )
-    retry_count = models.PositiveIntegerField(
-        default=0,
-        help_text="Current retry attempt number",
     )
 
-    # ── Status / results ─────────────────────────────────────────────────
-    status = models.CharField(max_length=20, choices=TaskStatus.choices, default=TaskStatus.SCHEDULED)
-    result = models.JSONField(null=True, blank=True, help_text="Task execution result or error")
+    max_retries = models.PositiveIntegerField(default=0)
+    retry_delay_seconds = models.PositiveIntegerField(default=60)
 
-    # ── Metadata ─────────────────────────────────────────────────────────
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='task_schedules')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
+    is_paused = models.BooleanField(default=False)
+
+    # ── Lifecycle ─────────────────────────────────────────────────────────
+
+    status = models.CharField(
+        max_length=20,
+        choices=TaskStatus.choices,
+        default=TaskStatus.SCHEDULED,
+    )
+
+    result = models.JSONField(null=True, blank=True)
+
     started_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 
+    # ── Ownership / metadata ─────────────────────────────────────────────
+
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="task_schedules",
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    # ── Meta ──────────────────────────────────────────────────────────────
+
     class Meta:
-        db_table = 'orkera_task_schedule'
-        ordering = ['-created_at']
+        db_table = "orkera_task_schedule"
+        ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=['user', 'status']),
-            models.Index(fields=['status', 'schedule_time']),
-            models.Index(fields=['created_at']),
-            models.Index(fields=['next_run_at', 'status']),
+            models.Index(fields=["user", "status"]),
+            models.Index(fields=["next_run_at", "status"]),
         ]
 
-    def __str__(self):
-        return f"{self.task_name} ({self.task_id}) - {self.status}"
-
-    # ── Lifecycle ────────────────────────────────────────────────────────
-
-    def save(self, *args, **kwargs):
-        from ..services.scheduling import compute_next_run  # avoid circular
-
-        is_new = self._state.adding
-
-        if is_new and self.callback_url and not self.schedule_time:
-            self.schedule_time = timezone.now()
-
-        if is_new or not kwargs.get('update_fields'):
-            self.next_run_at = compute_next_run(self)
-
-        if self.status == TaskStatus.RUNNING and not self.started_at:
-            self.started_at = timezone.now()
-        elif self.status in (TaskStatus.COMPLETED, TaskStatus.FAILED) and not self.completed_at:
-            self.completed_at = timezone.now()
-
-        super().save(*args, **kwargs)
-
-    def cancel(self):
-        """Mark the task as cancelled."""
-        if self.status not in (TaskStatus.COMPLETED, TaskStatus.FAILED, TaskStatus.CANCELLED):
-            self.status = TaskStatus.CANCELLED
-            self.next_run_at = None
-            self.save(update_fields=['status', 'next_run_at', 'updated_at'])
-
-    def pause(self):
-        """Pause a recurring task."""
-        if not self.is_recurring:
-            raise ValueError("Only recurring tasks can be paused.")
-        self.is_paused = True
-        self.save(update_fields=['is_paused', 'updated_at'])
-
-    def resume(self):
-        """Resume a paused recurring task."""
-        from ..services.scheduling import compute_next_run
-
-        if not self.is_recurring:
-            raise ValueError("Only recurring tasks can be resumed.")
-        if self.is_paused:
-            self.is_paused = False
-            self.status = TaskStatus.SCHEDULED
-            self.next_run_at = compute_next_run(self)
-            self.save(update_fields=['is_paused', 'status', 'next_run_at', 'updated_at'])
-
-    def retry(self):
-        """Re-schedule a failed task from scratch."""
-        from ..services.scheduling import compute_next_run
-
-        if self.status != TaskStatus.FAILED:
-            raise ValueError("Only failed tasks can be retried.")
-        self.status = TaskStatus.SCHEDULED
-        self.retry_count = 0
-        self.result = None
-        self.completed_at = None
-        self.next_run_at = compute_next_run(self)
-        self.save(update_fields=['status', 'retry_count', 'result', 'completed_at', 'next_run_at', 'updated_at'])
-
-    # ── Properties ───────────────────────────────────────────────────────
+    # ── Derived Properties ────────────────────────────────────────────────
 
     @property
-    def is_recurring(self):
+    def is_recurring(self) -> bool:
         return self.schedule_type != ScheduleType.ONE_OFF
 
     @property
-    def is_overdue(self):
+    def is_pausable(self) -> bool:
+        return self.is_recurring and self.status == TaskStatus.SCHEDULED
+
+    @property
+    def is_overdue(self) -> bool:
         if self.next_run_at and self.status == TaskStatus.SCHEDULED:
             return timezone.now() > self.next_run_at
         return False
@@ -190,3 +115,6 @@ class TaskSchedule(models.Model):
         if self.started_at and self.completed_at:
             return (self.completed_at - self.started_at).total_seconds()
         return None
+
+    def __str__(self):
+        return f"{self.task_name} ({self.task_id}) - {self.status}"

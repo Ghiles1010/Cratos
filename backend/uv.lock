@@ -34,6 +34,7 @@ dependencies = [
     { name = "django" },
     { name = "django-celery-beat" },
     { name = "django-cors-headers" },
+    { name = "django-filter" },
     { name = "djangorestframework" },
     { name = "gunicorn" },
     { name = "psycopg2-binary" },
@@ -55,6 +56,7 @@ requires-dist = [
     { name = "django", specifier = ">=4.2,<5.0" },
     { name = "django-celery-beat", specifier = ">=2.5" },
     { name = "django-cors-headers", specifier = ">=4.0" },
+    { name = "django-filter", specifier = ">=25.1" },
     { name = "djangorestframework", specifier = ">=3.14" },
     { name = "gunicorn", specifier = ">=21.0" },
     { name = "psycopg2-binary", specifier = ">=2.9" },
@@ -288,6 +290,18 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/21/39/55822b15b7ec87410f34cd16ce04065ff390e50f9e29f31d6d116fc80456/django_cors_headers-4.9.0.tar.gz", hash = "sha256:fe5d7cb59fdc2c8c646ce84b727ac2bca8912a247e6e68e1fb507372178e59e8", size = 21458, upload-time = "2025-09-18T10:40:52.326Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/30/d8/19ed1e47badf477d17fb177c1c19b5a21da0fd2d9f093f23be3fb86c5fab/django_cors_headers-4.9.0-py3-none-any.whl", hash = "sha256:15c7f20727f90044dcee2216a9fd7303741a864865f0c3657e28b7056f61b449", size = 12809, upload-time = "2025-09-18T10:40:50.843Z" },
+]
+
+[[package]]
+name = "django-filter"
+version = "25.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "django" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/b5/40/c702a6fe8cccac9bf426b55724ebdf57d10a132bae80a17691d0cf0b9bac/django_filter-25.1.tar.gz", hash = "sha256:1ec9eef48fa8da1c0ac9b411744b16c3f4c31176c867886e4c48da369c407153", size = 143021, upload-time = "2025-02-14T16:30:53.238Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/a6/70dcd68537c434ba7cb9277d403c5c829caf04f35baf5eb9458be251e382/django_filter-25.1-py3-none-any.whl", hash = "sha256:4fa48677cf5857b9b1347fed23e355ea792464e0fe07244d1fdfb8a806215b80", size = 94114, upload-time = "2025-02-14T16:30:50.435Z" },
 ]
 
 [[package]]

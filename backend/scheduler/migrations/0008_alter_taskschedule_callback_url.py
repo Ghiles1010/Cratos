@@ -13,6 +13,6 @@ class Migration(migrations.Migration):
         migrations.AlterField(
             model_name='taskschedule',
             name='callback_url',
-            field=models.URLField(blank=True, help_text='URL to POST to when task execution is triggered (optional if using WebSocket gateway)', null=True),
+            field=models.URLField(blank=True, help_text='URL to POST to when task execution is triggered', null=True),
         ),
     ]

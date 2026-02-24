@@ -12,18 +12,18 @@ from django.db import transaction
 from django.utils import timezone
 
 from ..models import TaskSchedule, TaskStatus
+from ..domain.lifecycle.handler import TaskHandler
+from .send_webhook import send_webhook
 
 logger = logging.getLogger(__name__)
 
 
-@shared_task(bind=True)
-def dispatch_due_tasks(self, batch_size: int = 100):
+@shared_task
+def dispatch_due_tasks(batch_size: int = 100):
     """
     Claim due tasks (next_run_at <= now, status=scheduled, not paused)
-    and fan-out ``send_callback_notification`` jobs.
+    and fan-out ``send_webhook`` jobs.
     """
-    from .callbacks import send_callback_notification
-
     now = timezone.now()
     claimed_ids: list[str] = []
 
@@ -43,14 +43,13 @@ def dispatch_due_tasks(self, batch_size: int = 100):
             )
 
             for task in due_tasks:
-                task.status = TaskStatus.PENDING
-                task.started_at = now
-                task.save(update_fields=['status', 'started_at', 'updated_at'])
+                TaskHandler(task).claim()
+                task.save(update_fields=['status', 'updated_at'])
                 claimed_ids.append(str(task.task_id))
 
         # Enqueue callbacks outside the transaction
         for task_id in claimed_ids:
-            send_callback_notification.delay(task_id)
+            send_webhook.delay(task_id)
 
         if claimed_ids:
             preview = claimed_ids[:10]

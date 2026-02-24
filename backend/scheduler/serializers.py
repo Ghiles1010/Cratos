@@ -5,7 +5,28 @@ from django.utils import timezone
 from rest_framework import serializers
 
 from .models import ExecutionStatus, RetryPolicy, ScheduleType, TaskExecution, TaskSchedule
-from .services.cron_parser import describe_cron, validate_cron
+from .utils.cron_parser import describe_cron, validate_cron
+
+
+class WebhookPayloadSerializer(serializers.ModelSerializer):
+    task_id = serializers.UUIDField()
+    is_recurring = serializers.ReadOnlyField()
+    timestamp = serializers.SerializerMethodField()
+    message = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TaskSchedule
+        fields = [
+            'task_id', 'task_name', 'task_args', 'task_kwargs',
+            'schedule_time', 'status', 'run_count', 'is_recurring',
+            'timestamp', 'message',
+        ]
+
+    def get_timestamp(self, obj):
+        return timezone.now().isoformat()
+
+    def get_message(self, obj):
+        return 'Task execution triggered'
 
 
 class TaskScheduleSerializer(serializers.ModelSerializer):

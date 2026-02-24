@@ -80,15 +80,12 @@ services:
       - DB_PORT=5432
       - CELERY_BROKER_URL=redis://cratos-redis:6379/0
       - CELERY_RESULT_BACKEND=redis://cratos-redis:6379/0
-      - WEBSOCKET_GATEWAY_URL=http://websocket-gateway:8000
     restart: unless-stopped
     depends_on:
       cratos-postgres:
         condition: service_healthy
       cratos-redis:
         condition: service_healthy
-      websocket-gateway:
-        condition: service_started
 
   # ── Celery Beat ──
   cratos-beat:
@@ -133,31 +130,12 @@ services:
       - DB_PORT=5432
       - CELERY_BROKER_URL=redis://cratos-redis:6379/0
       - CELERY_RESULT_BACKEND=redis://cratos-redis:6379/0
-      - WEBSOCKET_GATEWAY_URL=http://websocket-gateway:8000
     restart: unless-stopped
     depends_on:
       cratos-postgres:
         condition: service_healthy
       cratos-redis:
         condition: service_healthy
-      websocket-gateway:
-        condition: service_started
-
-  # ── FastAPI WebSocket Gateway ──
-  websocket-gateway:
-    build:
-      context: ./backend
-      dockerfile: websocket_gateway/Dockerfile
-    ports:
-      - "${CRATOS_WS_PORT:-9100}:8000"
-    environment:
-      - PORT=8000
-    restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
 
   # ── React UI ──
   cratos-ui:
