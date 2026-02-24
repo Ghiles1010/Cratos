@@ -2,8 +2,8 @@ from django.utils import timezone
 
 from .base import TaskState
 from scheduler.models.enums import TaskStatus
-from scheduler.domain.scheduling.next_run import NextRunComputer
-from scheduler.domain.scheduling.failure import FailureHandler
+from scheduler.domain.scheduling.next_run_computer import NextRunComputer
+from scheduler.domain.scheduling.failure_handler import FailureHandler
 from scheduler.models import FailureOutcome
 
 
