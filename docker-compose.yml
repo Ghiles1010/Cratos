@@ -1,5 +1,17 @@
 # Cratos – Docker Compose
 
+x-backend-env: &backend-env
+  env_file:
+    - .env
+  environment:
+    - DB_NAME=cratos
+    - DB_USER=cratos
+    - DB_PASSWORD=cratos_password
+    - DB_HOST=cratos-postgres
+    - DB_PORT=5432
+    - CELERY_BROKER_URL=redis://cratos-redis:6379/0
+    - CELERY_RESULT_BACKEND=redis://cratos-redis:6379/0
+
 services:
   # ── PostgreSQL ──
   cratos-postgres:
@@ -36,7 +48,9 @@ services:
   # ── Django API ──
   cratos-web:
     build: ./backend
-    command: python manage.py runserver 0.0.0.0:8001
+    entrypoint: ["bash", "/app/entrypoint.sh"]
+    command: uv run python manage.py runserver 0.0.0.0:8001
+    <<: *backend-env
     volumes:
       - ./backend:/app
     ports:
@@ -44,17 +58,12 @@ services:
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    env_file:
-      - .env
-    environment:
-      - DJANGO_DEBUG=True
-      - DB_NAME=cratos
-      - DB_USER=cratos
-      - DB_PASSWORD=cratos_password
-      - DB_HOST=cratos-postgres
-      - DB_PORT=5432
-      - CELERY_BROKER_URL=redis://cratos-redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://cratos-redis:6379/0
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8001/health/')\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
     depends_on:
       cratos-postgres:
         condition: service_healthy
@@ -64,77 +73,41 @@ services:
   # ── Celery Worker ──
   cratos-worker:
     build: ./backend
-    command: celery -A config worker --loglevel=info
+    command: uv run celery -A config worker --loglevel=info
+    <<: *backend-env
     volumes:
       - ./backend:/app
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    env_file:
-      - .env
-    environment:
-      - DJANGO_DEBUG=True
-      - DB_NAME=cratos
-      - DB_USER=cratos
-      - DB_PASSWORD=cratos_password
-      - DB_HOST=cratos-postgres
-      - DB_PORT=5432
-      - CELERY_BROKER_URL=redis://cratos-redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://cratos-redis:6379/0
     restart: unless-stopped
     depends_on:
-      cratos-postgres:
-        condition: service_healthy
-      cratos-redis:
+      cratos-web:
         condition: service_healthy
 
   # ── Celery Beat ──
   cratos-beat:
     build: ./backend
-    command: celery -A config beat --loglevel=info --pidfile=/tmp/celerybeat.pid
+    command: uv run celery -A config beat --loglevel=info --pidfile=/tmp/celerybeat.pid
+    <<: *backend-env
     volumes:
       - ./backend:/app
-    env_file:
-      - .env
-    environment:
-      - DJANGO_DEBUG=True
-      - DB_NAME=cratos
-      - DB_USER=cratos
-      - DB_PASSWORD=cratos_password
-      - DB_HOST=cratos-postgres
-      - DB_PORT=5432
-      - CELERY_BROKER_URL=redis://cratos-redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://cratos-redis:6379/0
     restart: unless-stopped
     depends_on:
-      cratos-postgres:
-        condition: service_healthy
-      cratos-redis:
+      cratos-web:
         condition: service_healthy
 
-  # ── Dispatcher Loop (backup if Beat fails) ──
+  # ── Dispatcher ──
   cratos-dispatcher:
     build: ./backend
-    command: python manage.py run_dispatcher_loop --interval=10
+    command: uv run python manage.py run_dispatcher_loop --interval=10
+    <<: *backend-env
     volumes:
       - ./backend:/app
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    env_file:
-      - .env
-    environment:
-      - DJANGO_DEBUG=True
-      - DB_NAME=cratos
-      - DB_USER=cratos
-      - DB_PASSWORD=cratos_password
-      - DB_HOST=cratos-postgres
-      - DB_PORT=5432
-      - CELERY_BROKER_URL=redis://cratos-redis:6379/0
-      - CELERY_RESULT_BACKEND=redis://cratos-redis:6379/0
     restart: unless-stopped
     depends_on:
-      cratos-postgres:
-        condition: service_healthy
-      cratos-redis:
+      cratos-web:
         condition: service_healthy
 
   # ── React UI ──

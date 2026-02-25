@@ -6,22 +6,20 @@ ENV DJANGO_SETTINGS_MODULE=config.settings
 ENV UV_COMPILE_BYTECODE=1
 ENV UV_LINK_MODE=copy
 
+# Install uv from its official image – no curl, no apt
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+
 WORKDIR /app
 
-# Install system dependencies + uv
-RUN apt-get update \
-    && apt-get install -y --no-install-recommends gcc postgresql-client curl \
-    && rm -rf /var/lib/apt/lists/* \
-    && curl -LsSf https://astral.sh/uv/install.sh | sh
-ENV PATH="/root/.local/bin:$PATH"
-
-# Install Python deps (leverages Docker layer cache)
+# Install dependencies first (cached layer – only re-runs when lock file changes)
 COPY pyproject.toml uv.lock ./
-RUN uv sync --frozen --no-install-project
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen --no-install-project
 
-# Copy project
+# Copy project and finalize
 COPY . .
-RUN uv sync --frozen
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --frozen
 
 EXPOSE 8001
 

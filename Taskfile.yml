@@ -59,12 +59,12 @@ tasks:
   migrate:
     desc: Run database migrations
     cmds:
-      - docker compose exec cratos-web python manage.py migrate
+      - docker compose exec cratos-web uv run python manage.py migrate
 
   makemigrations:
     desc: Generate migration files
     cmds:
-      - docker compose exec cratos-web python manage.py makemigrations
+      - docker compose exec cratos-web uv run python manage.py makemigrations
 
   # ── Django ──
 
@@ -72,22 +72,22 @@ tasks:
     desc: Open Django shell
     interactive: true
     cmds:
-      - docker compose exec cratos-web python manage.py shell
+      - docker compose exec cratos-web uv run python manage.py shell
 
   manage:
     desc: "Run a Django management command (usage: task manage -- <cmd>)"
     cmds:
-      - docker compose exec cratos-web python manage.py {{.CLI_ARGS}}
+      - docker compose exec cratos-web uv run python manage.py {{.CLI_ARGS}}
 
   createsuperuser:
     desc: Create a Django admin superuser
     cmds:
-      - docker compose exec -e DJANGO_SUPERUSER_PASSWORD=admin cratos-web python manage.py createsuperuser --noinput --username=admin --email=admin@cratos.local
+      - docker compose exec -e DJANGO_SUPERUSER_PASSWORD=admin cratos-web uv run python manage.py createsuperuser --noinput --username=admin --email=admin@cratos.local
 
   setup-dispatcher:
     desc: Register the dispatcher periodic task in Celery Beat
     cmds:
-      - docker compose exec cratos-web python manage.py ensure_dispatcher_periodic_task
+      - docker compose exec cratos-web uv run python manage.py ensure_dispatcher_periodic_task
 
   # ── Frontend ──
 

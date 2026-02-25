@@ -81,3 +81,7 @@ Thumbs.db
 *~
 
 todo.md
+
+# Local task runner
+Taskfile.yml
+Taskfile.yaml

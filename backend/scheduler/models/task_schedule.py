@@ -3,7 +3,7 @@ from django.conf import settings
 from django.db import models
 from django.utils import timezone
 
-from models.enums import RetryPolicy, ScheduleType, TaskStatus
+from .enums import RetryPolicy, ScheduleType, TaskStatus
 
 
 class TaskSchedule(models.Model):
