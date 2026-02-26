@@ -24,7 +24,6 @@ class TaskSchedule(models.Model):
     task_kwargs = models.JSONField(default=dict)
 
     callback_url = models.URLField(blank=True, null=True)
-    webhook_secret = models.CharField(max_length=255, blank=True, default="")
 
     # ── Scheduling configuration ──────────────────────────────────────────
 

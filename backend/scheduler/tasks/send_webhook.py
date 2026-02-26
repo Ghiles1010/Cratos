@@ -9,6 +9,7 @@ from django.utils import timezone
 
 from dataclasses import asdict
 
+from apiauth.models import WebhookSigningKey
 from scheduler.models import ExecutionStatus, FailureOutcome, FailureResult, SuccessResult, TaskExecution, TaskSchedule, TaskStatus
 from scheduler.serializers import WebhookPayloadSerializer
 from scheduler.domain.lifecycle.handler import TaskHandler
@@ -26,7 +27,7 @@ def send_webhook(task_id: str):
     started_at = timezone.now()
 
     try:
-        task = TaskSchedule.objects.get(task_id=uuid.UUID(task_id))
+        task = TaskSchedule.objects.select_related('user').get(task_id=uuid.UUID(task_id))
     except (TaskSchedule.DoesNotExist, ValueError):
         logger.error("callback: task %s not found — skipping", task_id)
         return
@@ -54,8 +55,11 @@ def send_webhook(task_id: str):
     try:
         payload_bytes = json.dumps(WebhookPayloadSerializer(task).data, separators=(',', ':')).encode()
         headers = {'Content-Type': 'application/json'}
-        if task.webhook_secret:
-            headers.update(sign(payload_bytes, task.webhook_secret))
+        signing_key, _ = WebhookSigningKey.objects.get_or_create(
+            user=task.user,
+            defaults={'secret': WebhookSigningKey.generate_secret()},
+        )
+        headers.update(sign(payload_bytes, signing_key.secret))
         response = requests.post(task.callback_url, data=payload_bytes, headers=headers, timeout=WEBHOOK_TIMEOUT)
     except requests.RequestException as exc:
         _handle_exception(task, execution, exc)

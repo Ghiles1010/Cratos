@@ -37,13 +37,12 @@ class TaskScheduleSerializer(serializers.ModelSerializer):
     is_recurring = serializers.ReadOnlyField()
     scheduler_info = serializers.SerializerMethodField()
     execution_history = serializers.SerializerMethodField()
-    webhook_secret = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     class Meta:
         model = TaskSchedule
         fields = [
             # identity
-            'task_id', 'task_name', 'task_args', 'task_kwargs', 'callback_url', 'webhook_secret',
+            'task_id', 'task_name', 'task_args', 'task_kwargs', 'callback_url',
             # scheduling
             'schedule_type', 'schedule_time', 'cron_expression',
             'interval_seconds', 'ends_at', 'task_timezone',
