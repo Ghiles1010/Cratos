@@ -17,7 +17,7 @@ const navItems: Array<{
   end?: boolean;
 }> = [
   { to: '/', icon: CheckSquare, label: 'Tasks', end: true },
-  { to: '/api-keys', icon: Key, label: 'API Keys' },
+  { to: '/api-keys', icon: Key, label: 'Secrets' },
   { to: '/health', icon: Activity, label: 'Health' },
   { to: '/metrics', icon: BarChart3, label: 'Metrics' },
 ];

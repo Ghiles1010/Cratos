@@ -9,12 +9,12 @@ from django.utils import timezone
 
 from dataclasses import asdict
 
-from apiauth.models import WebhookSigningKey
+from webhooks.models import WebhookSigningKey
 from scheduler.models import ExecutionStatus, FailureOutcome, FailureResult, SuccessResult, TaskExecution, TaskSchedule, TaskStatus
 from scheduler.serializers import WebhookPayloadSerializer
 from scheduler.domain.lifecycle.handler import TaskHandler
 from scheduler.domain.execution.execution_recorder import ExecutionRecorder
-from scheduler.utils.signing import sign
+from webhooks.services.signing import sign
 
 WEBHOOK_TIMEOUT = 30
 
@@ -60,7 +60,7 @@ def send_webhook(task_id: str):
             defaults={'secret': WebhookSigningKey.generate_secret()},
         )
         headers.update(sign(payload_bytes, signing_key.secret))
-        response = requests.post(task.callback_url, data=payload_bytes, headers=headers, timeout=WEBHOOK_TIMEOUT)
+        response = requests.post(task.callback_url, data=payload_bytes, headers=headers, timeout=WEBHOOK_TIMEOUT, allow_redirects=False)
     except requests.RequestException as exc:
         _handle_exception(task, execution, exc)
         return

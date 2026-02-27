@@ -167,6 +167,7 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('scheduler.urls')),
     path('api/keys/', include('apiauth.urls')),
+    path('api/webhooks/', include('webhooks.urls')),
     path('api/auth/', include('config.auth_urls')),
     path('health/', health_check, name='health-check'),
     path('metrics/', metrics, name='metrics'),

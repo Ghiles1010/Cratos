@@ -3,14 +3,15 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-from .models import APIKey, WebhookSigningKey
+
+from .models import APIKey
 
 
 @api_view(['GET', 'POST'])
 @permission_classes([IsAuthenticated])
 def api_key_view(request):
     """GET → return current key.  POST → regenerate."""
-    api_key, created = APIKey.objects.get_or_create(
+    api_key, _ = APIKey.objects.get_or_create(
         user=request.user,
         defaults={'key': APIKey.generate_key()},
     )
@@ -45,17 +46,3 @@ def api_key_token_view(request):
         defaults={'key': APIKey.generate_key()},
     )
     return Response({'key': api_key.key})
-
-
-@api_view(['GET', 'POST'])
-@permission_classes([IsAuthenticated])
-def webhook_signing_key_view(request):
-    """GET → return current signing secret.  POST → rotate to a new one."""
-    obj, _ = WebhookSigningKey.objects.get_or_create(
-        user=request.user,
-        defaults={'secret': WebhookSigningKey.generate_secret()},
-    )
-    if request.method == 'POST':
-        new_secret = obj.rotate()
-        return Response({'secret': new_secret, 'rotated': True})
-    return Response({'secret': obj.secret})

@@ -1,11 +1,10 @@
-import ipaddress
-from urllib.parse import urlparse
-
 from django.utils import timezone
 from rest_framework import serializers
 
 from .models import ExecutionStatus, RetryPolicy, ScheduleType, TaskExecution, TaskSchedule
 from .utils.cron_parser import describe_cron, validate_cron
+from webhooks.services.errors import URLPolicyError
+from webhooks.services.origin_checker import OriginChecker
 
 
 class WebhookPayloadSerializer(serializers.ModelSerializer):
@@ -121,25 +120,10 @@ class TaskScheduleSerializer(serializers.ModelSerializer):
     def validate_callback_url(self, value):
         if not value:
             raise serializers.ValidationError("Callback URL is required.")
-        parsed = urlparse(value)
-        if parsed.scheme not in ('http', 'https') or not parsed.hostname:
-            raise serializers.ValidationError("Must be a valid HTTP/HTTPS URL.")
-        
-        # Allow private IPs in DEBUG mode for local development
-        from django.conf import settings
-        if settings.DEBUG:
-            return value
-        
-        hostname = parsed.hostname.lower()
-        if hostname in ('localhost', '127.0.0.1', '::1'):
-            raise serializers.ValidationError("Cannot use localhost or loopback addresses.")
         try:
-            ip = ipaddress.ip_address(hostname)
-            if ip.is_private or ip.is_loopback or ip.is_unspecified:
-                raise serializers.ValidationError("Cannot use private/loopback IPs.")
-        except ValueError:
-            if hostname.endswith(('.local', '.internal', '.private', '.corp')):
-                raise serializers.ValidationError("Cannot use internal domains.")
+            OriginChecker().check_url(value)
+        except URLPolicyError as exc:
+            raise serializers.ValidationError(str(exc))
         return value
 
     def validate_cron_expression(self, value):
