@@ -89,6 +89,11 @@ tasks:
     cmds:
       - docker compose exec cratos-web uv run python manage.py ensure_dispatcher_periodic_task
 
+  test:
+    desc: Run Django tests (uses SQLite in-memory, no PostgreSQL needed)
+    cmds:
+      - docker compose exec cratos-web uv run python manage.py test --settings=config.settings_test
+
   # ── Frontend ──
 
   ui:install:
