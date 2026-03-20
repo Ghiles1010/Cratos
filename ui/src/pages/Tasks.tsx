@@ -5,7 +5,6 @@ import { Button } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import type { TaskStatus } from '@/lib/api';
 import CreateTaskDialog from '@/components/CreateTaskDialog';
-import TaskDetailDrawer from '@/components/TaskDetailDrawer';
 import {
   StatCard,
   AutoRefreshToggle,
@@ -21,7 +20,6 @@ export default function Tasks() {
   const [statusFilter, setStatusFilter] = useState<TaskStatus | 'all'>('all');
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
 
   const { data, isLoading, isFetching, refetch } = useTasks({
     page,
@@ -126,11 +124,7 @@ export default function Tasks() {
       </div>
 
       {/* Table */}
-      <TaskTable
-        tasks={filtered}
-        isLoading={isLoading}
-        onSelect={setSelectedTaskId}
-      />
+      <TaskTable tasks={filtered} isLoading={isLoading} />
 
       {/* Pagination */}
       {totalPages > 1 && (
@@ -145,10 +139,6 @@ export default function Tasks() {
 
       {/* Dialogs */}
       <CreateTaskDialog open={createOpen} onOpenChange={setCreateOpen} />
-      <TaskDetailDrawer
-        taskId={selectedTaskId}
-        onClose={() => setSelectedTaskId(null)}
-      />
     </div>
   );
 }

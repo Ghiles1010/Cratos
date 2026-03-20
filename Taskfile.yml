@@ -31,9 +31,9 @@ tasks:
       - docker compose down
 
   restart:
-    desc: Restart all services
+    desc: "Restart all services (or a specific one: task restart -- web)"
     cmds:
-      - docker compose restart
+      - docker compose restart {{.CLI_ARGS}}
 
   clean:
     desc: Stop all services, remove containers, networks, and volumes
@@ -104,6 +104,12 @@ tasks:
     dir: ui
     cmds:
       - npm run dev
+
+  ui:rebuild:
+    desc: Rebuild and restart the UI container
+    cmds:
+      - docker compose build --no-cache ui
+      - docker compose restart ui
 
   # ── First-time setup ──
 

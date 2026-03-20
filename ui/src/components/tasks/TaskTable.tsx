@@ -1,4 +1,5 @@
 import { RefreshCw, AlertCircle } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Badge, statusVariant } from '@/components/ui';
 import { relativeTime, scheduleLabel } from '@/lib/utils';
 import type { Task } from '@/lib/api';
@@ -6,10 +7,10 @@ import type { Task } from '@/lib/api';
 interface TaskTableProps {
   tasks: Task[];
   isLoading: boolean;
-  onSelect: (id: string) => void;
 }
 
-export function TaskTable({ tasks, isLoading, onSelect }: TaskTableProps) {
+export function TaskTable({ tasks, isLoading }: TaskTableProps) {
+  const navigate = useNavigate();
   if (isLoading) {
     return (
       <div className="flex items-center justify-center rounded-lg border border-border bg-bg-card py-16">
@@ -50,7 +51,7 @@ export function TaskTable({ tasks, isLoading, onSelect }: TaskTableProps) {
           {tasks.map((t) => (
             <tr
               key={t.task_id}
-              onClick={() => onSelect(t.task_id)}
+              onClick={() => navigate(`/tasks/${t.task_id}`)}
               className="border-b border-border last:border-0 cursor-pointer transition-colors hover:bg-bg-card-hover"
             >
               <td className="px-4 py-3">

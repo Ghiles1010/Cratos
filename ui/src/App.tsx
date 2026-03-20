@@ -6,6 +6,7 @@ import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import Login from '@/pages/Login';
 import Tasks from '@/pages/Tasks';
+import TaskDetail from '@/pages/TaskDetail';
 import ApiKeys from '@/pages/ApiKeys';
 import Health from '@/pages/Health';
 import Metrics from '@/pages/Metrics';
@@ -33,6 +34,7 @@ export default function App() {
             >
               <Route index element={<Tasks />} />
               <Route path="tasks" element={<Navigate to="/" replace />} />
+              <Route path="tasks/:taskId" element={<TaskDetail />} />
               <Route path="api-keys" element={<ApiKeys />} />
               <Route path="health" element={<Health />} />
               <Route path="metrics" element={<Metrics />} />
