@@ -1,6 +1,5 @@
 """URL configuration for the standalone Scheduler service."""
 
-from django.contrib import admin
 from django.urls import path, include
 from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
@@ -164,7 +163,6 @@ def metrics_json(request):
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
     path('api/', include('scheduler.urls')),
     path('api/keys/', include('apiauth.urls')),
     path('api/webhooks/', include('webhooks.urls')),
