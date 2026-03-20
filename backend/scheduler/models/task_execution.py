@@ -49,12 +49,12 @@ class TaskExecution(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        db_table = 'orkera_task_execution'
+        db_table = 'cratos_task_execution'
         ordering = ['-started_at']
         indexes = [
-            models.Index(fields=['task', '-started_at']),
-            models.Index(fields=['status', '-started_at']),
-            models.Index(fields=['started_at']),
+            models.Index(fields=['task', '-started_at'], name='cratos_task_execution_task_started_idx'),
+            models.Index(fields=['status', '-started_at'], name='cratos_task_execution_status_idx'),
+            models.Index(fields=['started_at'], name='cratos_task_execution_started_idx'),
         ]
         unique_together = [['task', 'execution_number']]
 

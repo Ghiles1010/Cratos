@@ -1,6 +1,7 @@
 """URL configuration for the standalone Scheduler service."""
 
 from django.urls import path, include
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
 
@@ -170,4 +171,6 @@ urlpatterns = [
     path('health/', health_check, name='health-check'),
     path('metrics/', metrics, name='metrics'),
     path('metrics/json/', metrics_json, name='metrics-json'),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
 ]

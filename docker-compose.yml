@@ -1,32 +1,32 @@
 # Cratos – Docker Compose
 
 x-backend-env: &backend-env
-  env_file:
-    - .env
   environment:
-    - DB_NAME=cratos
-    - DB_USER=cratos
-    - DB_PASSWORD=cratos_password
-    - DB_HOST=cratos-postgres
-    - DB_PORT=5432
-    - CELERY_BROKER_URL=redis://cratos-redis:6379/0
-    - CELERY_RESULT_BACKEND=redis://cratos-redis:6379/0
+    - DB_NAME=${DB_NAME:-cratos}
+    - DB_USER=${DB_USER:-cratos}
+    - DB_PASSWORD=${DB_PASSWORD:-cratos_password}
+    - DB_HOST=${DB_HOST:-cratos-postgres}
+    - DB_PORT=${DB_PORT:-5432}
+    - CELERY_BROKER_URL=${REDIS_URL:-redis://cratos-redis:6379/0}
+    - CELERY_RESULT_BACKEND=${REDIS_URL:-redis://cratos-redis:6379/0}
+    - CRATOS_ADMIN_USERNAME=${CRATOS_ADMIN_USERNAME:-admin}
+    - CRATOS_ADMIN_PASSWORD=${CRATOS_ADMIN_PASSWORD:-admin}
 
 services:
   # ── PostgreSQL ──
   cratos-postgres:
     image: postgres:15-alpine
     environment:
-      POSTGRES_DB: cratos
-      POSTGRES_USER: cratos
-      POSTGRES_PASSWORD: cratos_password
+      POSTGRES_DB: ${DB_NAME:-cratos}
+      POSTGRES_USER: ${DB_USER:-cratos}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-cratos_password}
     volumes:
       - cratos_pg_data:/var/lib/postgresql/data
     ports:
       - "${CRATOS_POSTGRES_PORT:-9433}:5432"
     restart: unless-stopped
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U cratos"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cratos}"]
       interval: 10s
       timeout: 5s
       retries: 5
@@ -84,18 +84,6 @@ services:
       cratos-web:
         condition: service_healthy
 
-  # ── Celery Beat ──
-  cratos-beat:
-    build: ./backend
-    command: uv run celery -A config beat --loglevel=info --pidfile=/tmp/celerybeat.pid
-    <<: *backend-env
-    volumes:
-      - ./backend:/app
-    restart: unless-stopped
-    depends_on:
-      cratos-web:
-        condition: service_healthy
-
   # ── Dispatcher ──
   cratos-dispatcher:
     build: ./backend
@@ -115,7 +103,7 @@ services:
     build:
       context: ./ui
       args:
-        - VITE_SCHEDULER_API_URL=${VITE_SCHEDULER_API_URL:-http://localhost:9101}
+        - VITE_SCHEDULER_API_URL=${CRATOS_API_URL:-http://localhost:9101}
     ports:
       - "${CRATOS_UI_PORT:-3001}:3001"
     environment:

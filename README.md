@@ -49,7 +49,7 @@ Register a URL, pick a schedule (one-off, cron, or interval), and Cratos fires a
 - **Execution History** — full audit trail with HTTP response details, timings, and error traces
 - **Webhook Signing** — HMAC signatures so your endpoints can verify requests come from Cratos
 - **Web UI** — manage tasks, view metrics, and handle API keys from the browser
-- **REST API** — full programmatic access; use directly or via the [Python SDK](https://github.com/Ghiles1010/Cratos-SDK)
+- **REST API** — full programmatic access
 
 ## Quick Start
 
@@ -58,7 +58,6 @@ Register a URL, pick a schedule (one-off, cron, or interval), and Cratos fires a
 ```bash
 git clone https://github.com/Ghiles1010/Cratos.git
 cd Cratos
-cp .env.example .env
 docker compose up -d --build
 ```
 
@@ -67,8 +66,8 @@ docker compose up -d --build
 | Web UI  | http://localhost:3001 |
 | REST API | http://localhost:9101 |
 
-- Set `CRATOS_ADMIN_USERNAME` and `CRATOS_ADMIN_PASSWORD` in `.env` before the first boot to change the default credentials.
-- On a remote host, set `VITE_SCHEDULER_API_URL` to the public address of the API — it is baked into the UI image at build time.
+- Default credentials are `admin` / `admin`. Override by setting `CRATOS_ADMIN_USERNAME` and `CRATOS_ADMIN_PASSWORD` as environment variables or in an optional `.env` file (see `.env.example`).
+- On a remote host, set `CRATOS_API_URL` to the public address of your Cratos instance.
 
 ## API Usage
 
@@ -177,17 +176,13 @@ Cratos supports two authentication methods that can be used interchangeably:
 | Method | Header | Use case |
 |---|---|---|
 | Session cookie | (set by browser after login) | Web UI |
-| API key | `Authorization: Api-Key <key>` | SDK, scripts, CI |
+| API key | `Authorization: Api-Key <key>` | scripts, CI |
 
 Each user has exactly one API key. Keys can be regenerated at any time via `POST /api/keys/` or from the UI. The `last_used` timestamp is updated on every authenticated request for audit purposes.
 
 ### Resource isolation
 
 All task queries are automatically filtered to the authenticated user. A user cannot read, modify, cancel, or delete another user's tasks, regardless of the task ID they supply. Signing keys and API keys follow the same per-user isolation.
-
-## Related Projects
-
-- **[Cratos SDK](https://github.com/Ghiles1010/Cratos-SDK)** — Python SDK for programmatic access
 
 ## License
 

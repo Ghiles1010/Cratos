@@ -4,25 +4,21 @@ Idempotent bootstrap command – runs automatically on every container start via
 Creates (if not already present):
   - Superuser  (CRATOS_ADMIN_USERNAME / CRATOS_ADMIN_PASSWORD)
   - API key    (auto-generated, printed to logs on first boot)
-  - Dispatcher periodic task for Celery Beat
 """
-import json
 import os
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 
 User = get_user_model()
 
 
 class Command(BaseCommand):
-    help = "Bootstrap Cratos: superuser, API key, dispatcher task (idempotent)"
+    help = "Bootstrap Cratos: superuser and API key (idempotent)"
 
     def handle(self, *args, **options):
         user = self._ensure_superuser()
         self._ensure_api_key(user)
-        self._ensure_dispatcher()
 
     def _ensure_superuser(self):
         username = os.environ.get("CRATOS_ADMIN_USERNAME", "admin")
@@ -52,24 +48,3 @@ class Command(BaseCommand):
         else:
             self.stdout.write("[bootstrap] API key already exists")
 
-    def _ensure_dispatcher(self):
-        from django_celery_beat.models import IntervalSchedule, PeriodicTask
-
-        schedule, _ = IntervalSchedule.objects.get_or_create(
-            every=10,
-            period=IntervalSchedule.SECONDS,
-        )
-        _, created = PeriodicTask.objects.get_or_create(
-            name="dispatch-due-tasks",
-            defaults={
-                "task": "scheduler.tasks.dispatcher.dispatch_due_tasks",
-                "interval": schedule,
-                "kwargs": json.dumps({"batch_size": 100, "lookback_seconds": 60}),
-                "enabled": True,
-                "start_time": timezone.now(),
-            },
-        )
-        if created:
-            self.stdout.write(self.style.SUCCESS("[bootstrap] Registered dispatcher periodic task"))
-        else:
-            self.stdout.write("[bootstrap] Dispatcher periodic task already registered")
