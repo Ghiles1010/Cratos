@@ -79,15 +79,10 @@ tasks:
     cmds:
       - docker compose exec cratos-web uv run python manage.py {{.CLI_ARGS}}
 
-  createsuperuser:
-    desc: Create a Django admin superuser
+  get-api-key:
+    desc: "Print the API key for a user (usage: task get-api-key -- --username=admin --password=admin)"
     cmds:
-      - docker compose exec -e DJANGO_SUPERUSER_PASSWORD=admin cratos-web uv run python manage.py createsuperuser --noinput --username=admin --email=admin@cratos.local
-
-  setup-dispatcher:
-    desc: Register the dispatcher periodic task in Celery Beat
-    cmds:
-      - docker compose exec cratos-web uv run python manage.py ensure_dispatcher_periodic_task
+      - docker compose exec cratos-web uv run python manage.py get_api_key {{.CLI_ARGS}}
 
   test:
     desc: Run Django tests (uses SQLite in-memory, no PostgreSQL needed)
@@ -111,12 +106,8 @@ tasks:
   # ── First-time setup ──
 
   init:
-    desc: Full first-time setup – build, start, migrate, create user, register dispatcher
+    desc: Full first-time setup – build and start (migrations + bootstrap run automatically)
     cmds:
       - task: build
       - task: up
-      - task: makemigrations
-      - task: migrate
-      - task: createsuperuser
-      - task: setup-dispatcher
       - echo "Cratos is fully initialized!"
