@@ -80,9 +80,11 @@ tasks:
       - docker compose exec web uv run python manage.py {{.CLI_ARGS}}
 
   get-api-key:
-    desc: "Print the API key for a user (usage: task get-api-key -- --username=admin --password=admin)"
+    desc: "Print the API key for a user"
     cmds:
-      - docker compose exec web uv run python manage.py get_api_key {{.CLI_ARGS}}
+      - docker compose exec web uv run python manage.py get_api_key --username={{.USERNAME}} --password={{.PASSWORD}}
+    requires:
+      vars: [USERNAME, PASSWORD]
 
   test:
     desc: Run Django tests (uses SQLite in-memory, no PostgreSQL needed)
