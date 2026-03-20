@@ -53,44 +53,24 @@ Register a URL, pick a schedule (one-off, cron, or interval), and Cratos fires a
 
 ## Quick Start
 
-### Prerequisites
-
-- Docker and Docker Compose
-
-### Setup
+**Prerequisites:** Docker and Docker Compose.
 
 ```bash
 git clone https://github.com/Ghiles1010/Cratos.git
 cd Cratos
 cp .env.example .env
-task init
+docker compose up -d --build
 ```
-
-`task init` builds images, starts services, runs migrations, creates an admin user (`admin` / `admin`), and registers the dispatcher.
-
-> No `task` CLI? Run the steps manually:
-> ```bash
-> docker compose up -d --build
-> docker compose exec cratos-web python manage.py migrate
-> docker compose exec cratos-web python manage.py createsuperuser
-> docker compose exec cratos-web python manage.py ensure_dispatcher_periodic_task
-> ```
-
-### Access
 
 | Service | URL |
 |---------|-----|
 | Web UI  | http://localhost:3001 |
 | REST API | http://localhost:9101 |
 
+- Set `CRATOS_ADMIN_USERNAME` and `CRATOS_ADMIN_PASSWORD` in `.env` before the first boot to change the default credentials.
+- On a remote host, set `VITE_SCHEDULER_API_URL` to the public address of the API — it is baked into the UI image at build time.
+
 ## API Usage
-
-### Get your API key
-
-```bash
-docker compose exec cratos-web python manage.py get_api_key \
-  --username admin --password admin
-```
 
 ### Schedule a task
 
@@ -115,63 +95,95 @@ curl http://localhost:9101/api/tasks/ \
   -H "Authorization: Api-Key YOUR_API_KEY"
 ```
 
-## Configuration
+## Security Model
 
-Copy `.env.example` to `.env` to customize ports:
+Cratos makes outbound HTTP requests on your behalf, so it enforces two complementary controls: it only calls URLs you explicitly permit, and it signs every request so your endpoints can verify the call is genuine.
 
-```bash
-CRATOS_API_PORT=9101
-CRATOS_POSTGRES_PORT=9433
-CRATOS_REDIS_PORT=9638
-CRATOS_UI_PORT=3001
+### Outbound request allowlist
 
-# URL the browser uses to reach the API (must be host-accessible)
-VITE_SCHEDULER_API_URL=http://localhost:9101
-```
+Before any callback URL can be registered or fired, its **origin** (scheme + host + port) must appear in the `AllowedOrigin` table. Everything else is rejected at validation time — a task whose URL is not on the list cannot be created at all.
 
-> **Note:** `VITE_SCHEDULER_API_URL` is baked into the frontend at build time. If you change it, rebuild the UI container: `docker compose build cratos-ui`.
+This is the primary defence against SSRF (Server-Side Request Forgery): a user cannot instruct Cratos to probe internal services, cloud metadata endpoints, or arbitrary hosts on your network.
 
-## Repository Structure
+**Normalisation rules applied before comparison:**
 
-```
-cratos/
-├── backend/          # Django API + Celery workers
-├── ui/               # React + TypeScript frontend
-├── docker-compose.yml
-├── .env.example
-└── Taskfile.yml
-```
+| Input | Stored as |
+|---|---|
+| `https://hooks.example.com` | `https / hooks.example.com / 443` |
+| `http://internal.local` | `http / internal.local / 80` |
+| `http://internal.local:8080/path` | `http / internal.local / 8080` |
+| `HTTPS://Hooks.Example.Com.` | `https / hooks.example.com / 443` |
 
-## Development
+- Scheme must be `http` or `https` — no other protocols are accepted.
+- Host is lowercased and trailing dots are stripped before comparison.
+- If the URL omits a port, the default for the scheme is assumed (`80` for http, `443` for https). An explicit port must match exactly.
 
-### Backend
+**Managing the allowlist** requires Django admin/staff privileges (`IsAdminUser`). Regular users can only register callback URLs that already belong to an approved origin.
 
 ```bash
-docker compose up cratos-postgres cratos-redis -d
-cd backend
-pip install -r requirements.txt
-python manage.py migrate
-python manage.py runserver
+# Add an allowed origin via the API (admin credentials required)
+curl -X POST http://localhost:9101/api/webhooks/allowed-origins/ \
+  -H "Authorization: Api-Key ADMIN_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"scheme": "https", "host": "hooks.example.com", "port": 443}'
 ```
 
-### Frontend
+### Webhook signing
+
+Every outbound request carries two headers that let your endpoint verify the call came from Cratos and has not been replayed:
+
+```
+X-Cratos-Timestamp: 1709041234
+X-Cratos-Signature: sha256=a3f1...
+```
+
+The signature is an **HMAC-SHA256** computed over `"{timestamp}.{raw_body}"` using a per-user secret. The signed message intentionally includes the timestamp so that receivers can reject requests with a stale timestamp (the convention is to refuse anything older than 5 minutes).
+
+**Verification example (Python):**
+
+```python
+import hashlib, hmac, time
+
+def verify(payload_bytes, headers, secret, max_age_seconds=300):
+    timestamp = headers["X-Cratos-Timestamp"]
+    if abs(time.time() - int(timestamp)) > max_age_seconds:
+        raise ValueError("Request is too old — possible replay attack")
+
+    signed_content = f"{timestamp}.".encode() + payload_bytes
+    expected = "sha256=" + hmac.new(
+        secret.encode(), signed_content, hashlib.sha256
+    ).hexdigest()
+
+    if not hmac.compare_digest(expected, headers["X-Cratos-Signature"]):
+        raise ValueError("Invalid signature")
+```
+
+**Key management:** each user has one signing secret, automatically generated on first use. It can be rotated at any time — the new secret takes effect immediately for all subsequent requests.
 
 ```bash
-cd ui
-npm install
-npm run dev   # http://localhost:3001
+# Rotate your signing secret
+curl -X POST http://localhost:9101/api/webhooks/signing-key/ \
+  -H "Authorization: Api-Key YOUR_API_KEY"
 ```
 
-## Common Commands
+### Redirect blocking
 
-```bash
-task up              # Start all services
-task down            # Stop all services
-task logs            # Tail all logs
-task migrate         # Run DB migrations
-task shell           # Django shell
-task ui:dev          # Start frontend dev server
-```
+The HTTP client sends all webhook requests with `allow_redirects=False`. This means a server-side redirect (3xx) is treated as an error rather than followed. Without this, an allowlisted origin could silently redirect Cratos to a non-allowlisted destination, bypassing the allowlist entirely.
+
+### Authentication
+
+Cratos supports two authentication methods that can be used interchangeably:
+
+| Method | Header | Use case |
+|---|---|---|
+| Session cookie | (set by browser after login) | Web UI |
+| API key | `Authorization: Api-Key <key>` | SDK, scripts, CI |
+
+Each user has exactly one API key. Keys can be regenerated at any time via `POST /api/keys/` or from the UI. The `last_used` timestamp is updated on every authenticated request for audit purposes.
+
+### Resource isolation
+
+All task queries are automatically filtered to the authenticated user. A user cannot read, modify, cancel, or delete another user's tasks, regardless of the task ID they supply. Signing keys and API keys follow the same per-user isolation.
 
 ## Related Projects
 
