@@ -49,9 +49,9 @@ tasks:
     desc: Wait for PostgreSQL and Redis to be ready
     cmds:
       - |
-        until docker compose exec -T cratos-postgres pg_isready -U {{.DB_USER}}; do sleep 2; done
+        until docker compose exec -T postgres pg_isready -U {{.DB_USER}}; do sleep 2; done
       - |
-        until docker compose exec -T cratos-redis redis-cli ping; do sleep 2; done
+        until docker compose exec -T redis redis-cli ping; do sleep 2; done
       - echo "Services are ready!"
 
   # ── Database ──
@@ -59,12 +59,12 @@ tasks:
   migrate:
     desc: Run database migrations
     cmds:
-      - docker compose exec cratos-web uv run python manage.py migrate
+      - docker compose exec web uv run python manage.py migrate
 
   makemigrations:
     desc: Generate migration files
     cmds:
-      - docker compose exec cratos-web uv run python manage.py makemigrations
+      - docker compose exec web uv run python manage.py makemigrations
 
   # ── Django ──
 
@@ -72,22 +72,22 @@ tasks:
     desc: Open Django shell
     interactive: true
     cmds:
-      - docker compose exec cratos-web uv run python manage.py shell
+      - docker compose exec web uv run python manage.py shell
 
   manage:
     desc: "Run a Django management command (usage: task manage -- <cmd>)"
     cmds:
-      - docker compose exec cratos-web uv run python manage.py {{.CLI_ARGS}}
+      - docker compose exec web uv run python manage.py {{.CLI_ARGS}}
 
   get-api-key:
     desc: "Print the API key for a user (usage: task get-api-key -- --username=admin --password=admin)"
     cmds:
-      - docker compose exec cratos-web uv run python manage.py get_api_key {{.CLI_ARGS}}
+      - docker compose exec web uv run python manage.py get_api_key {{.CLI_ARGS}}
 
   test:
     desc: Run Django tests (uses SQLite in-memory, no PostgreSQL needed)
     cmds:
-      - docker compose exec cratos-web uv run python manage.py test --settings=config.settings_test
+      - docker compose exec web uv run python manage.py test --settings=config.settings_test
 
   # ── Frontend ──
 

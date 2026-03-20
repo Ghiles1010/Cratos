@@ -5,16 +5,16 @@ x-backend-env: &backend-env
     - DB_NAME=${DB_NAME:-cratos}
     - DB_USER=${DB_USER:-cratos}
     - DB_PASSWORD=${DB_PASSWORD:-cratos_password}
-    - DB_HOST=${DB_HOST:-cratos-postgres}
+    - DB_HOST=${DB_HOST:-postgres}
     - DB_PORT=${DB_PORT:-5432}
-    - CELERY_BROKER_URL=${REDIS_URL:-redis://cratos-redis:6379/0}
-    - CELERY_RESULT_BACKEND=${REDIS_URL:-redis://cratos-redis:6379/0}
+    - CELERY_BROKER_URL=${REDIS_URL:-redis://redis:6379/0}
+    - CELERY_RESULT_BACKEND=${REDIS_URL:-redis://redis:6379/0}
     - CRATOS_ADMIN_USERNAME=${CRATOS_ADMIN_USERNAME:-admin}
     - CRATOS_ADMIN_PASSWORD=${CRATOS_ADMIN_PASSWORD:-admin}
 
 services:
   # ── PostgreSQL ──
-  cratos-postgres:
+  postgres:
     image: postgres:15-alpine
     environment:
       POSTGRES_DB: ${DB_NAME:-cratos}
@@ -32,7 +32,7 @@ services:
       retries: 5
 
   # ── Redis ──
-  cratos-redis:
+  redis:
     image: redis:7-alpine
     ports:
       - "${CRATOS_REDIS_PORT:-9638}:6379"
@@ -46,7 +46,7 @@ services:
       retries: 5
 
   # ── Django API ──
-  cratos-web:
+  web:
     build: ./backend
     entrypoint: ["bash", "/app/entrypoint.sh"]
     command: uv run python manage.py runserver 0.0.0.0:8001
@@ -65,13 +65,13 @@ services:
       retries: 10
       start_period: 30s
     depends_on:
-      cratos-postgres:
+      postgres:
         condition: service_healthy
-      cratos-redis:
+      redis:
         condition: service_healthy
 
   # ── Celery Worker ──
-  cratos-worker:
+  worker:
     build: ./backend
     command: uv run celery -A config worker --loglevel=info
     <<: *backend-env
@@ -81,11 +81,11 @@ services:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
     depends_on:
-      cratos-web:
+      web:
         condition: service_healthy
 
   # ── Dispatcher ──
-  cratos-dispatcher:
+  dispatcher:
     build: ./backend
     command: uv run python manage.py run_dispatcher_loop --interval=10
     <<: *backend-env
@@ -95,11 +95,11 @@ services:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
     depends_on:
-      cratos-web:
+      web:
         condition: service_healthy
 
   # ── React UI ──
-  cratos-ui:
+  ui:
     build:
       context: ./ui
       args:
@@ -112,7 +112,7 @@ services:
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
-      - cratos-web
+      - web
 
 volumes:
   cratos_pg_data:

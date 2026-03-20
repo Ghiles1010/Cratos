@@ -89,8 +89,8 @@ class TaskSchedule(models.Model):
         db_table = "cratos_task_schedule"
         ordering = ["-created_at"]
         indexes = [
-            models.Index(fields=["user", "status"], name="cratos_task_schedule_user_status_idx"),
-            models.Index(fields=["next_run_at", "status"], name="cratos_task_schedule_next_run_idx"),
+            models.Index(fields=["user", "status"], name="cratos_tsched_user_status_idx"),
+            models.Index(fields=["next_run_at", "status"], name="cratos_tsched_next_run_idx"),
         ]
 
     # ── Derived Properties ────────────────────────────────────────────────
