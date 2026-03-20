@@ -106,6 +106,7 @@ class TaskScheduleSerializer(serializers.ModelSerializer):
                 'error_message': e.error_message,
                 'retry_count': e.retry_count,
                 'is_retry': e.is_retry,
+                'result': e.result,
             }
             for e in executions
         ]

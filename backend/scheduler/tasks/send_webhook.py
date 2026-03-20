@@ -73,26 +73,28 @@ def send_webhook(task_id: str):
 
 def _handle_success(task: TaskSchedule, execution: TaskExecution, response: requests.Response) -> None:
     ExecutionRecorder(execution).record_success(response)
+    execution.result = _success_result(task, response)
+    execution.save(update_fields=['result'])
     TaskHandler(task).complete()
-    task.result = _success_result(task, response)
-    task.save(update_fields=['status', 'result', 'last_run_at', 'run_count', 'retry_count', 'next_run_at', 'completed_at', 'updated_at'])
+    task.save(update_fields=['status', 'last_run_at', 'run_count', 'retry_count', 'next_run_at', 'completed_at', 'updated_at'])
     logger.info("callback: task %s completed (run #%d), next_run_at=%s", task.task_id, task.run_count, task.next_run_at)
 
 
 def _handle_exception(task: TaskSchedule, execution: TaskExecution, exc: Exception) -> None:
     ExecutionRecorder(execution).record_exception(exc)
-    _fail_task(task, f"{type(exc).__name__}: {exc}")
+    _fail_task(task, execution, f"{type(exc).__name__}: {exc}")
 
 
 def _handle_http_error(task: TaskSchedule, execution: TaskExecution, response: requests.Response) -> None:
     ExecutionRecorder(execution).record_http_error(response)
-    _fail_task(task, f"HTTP {response.status_code}: {response.text[:500]}")
+    _fail_task(task, execution, f"HTTP {response.status_code}: {response.text[:500]}")
 
 
-def _fail_task(task: TaskSchedule, error_detail: str) -> None:
+def _fail_task(task: TaskSchedule, execution: TaskExecution, error_detail: str) -> None:
     outcome = TaskHandler(task).fail()
-    task.result = _failure_result(task, outcome, error_detail)
-    task.save(update_fields=['status', 'result', 'completed_at', 'next_run_at', 'retry_count', 'updated_at'])
+    execution.result = _failure_result(task, outcome, error_detail)
+    execution.save(update_fields=['result'])
+    task.save(update_fields=['status', 'completed_at', 'next_run_at', 'retry_count', 'updated_at'])
     if outcome.retried:
         logger.info("callback: task %s will be retried (%d/%d)", task.task_id, task.retry_count, task.max_retries)
     else:

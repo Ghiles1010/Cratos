@@ -7,6 +7,7 @@ import {
   Loader2,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import {
@@ -32,6 +33,7 @@ export default function TaskDetail() {
 
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [historyPage, setHistoryPage] = useState(1);
+  const [expandedExec, setExpandedExec] = useState<number | null>(null);
 
   const handleCopyId = () => {
     if (task) {
@@ -212,62 +214,82 @@ export default function TaskDetail() {
                         <th className="pb-2 text-left font-medium pr-3">HTTP</th>
                         <th className="pb-2 text-left font-medium pr-3">Retries</th>
                         <th className="pb-2 text-left font-medium">Error</th>
+                        <th className="pb-2 w-5"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {pagedExecutions.map((exec) => (
-                        <tr key={exec.execution_number} className="align-top">
-                          <td className="py-2 pr-3 text-text-muted font-mono">
-                            {exec.execution_number}
-                          </td>
-                          <td className="py-2 pr-3">
-                            <Badge
-                              variant={
-                                exec.status === 'success'
-                                  ? 'green'
-                                  : exec.status === 'failed'
-                                    ? 'red'
-                                    : exec.status === 'running'
-                                      ? 'yellow'
-                                      : 'gray'
-                              }
+                      {pagedExecutions.map((exec) => {
+                        const isExpanded = expandedExec === exec.execution_number;
+                        const hasDetail = exec.result != null || exec.error_message;
+                        return (
+                          <>
+                            <tr
+                              key={exec.execution_number}
+                              className={`align-top ${hasDetail ? 'cursor-pointer hover:bg-bg-card transition-colors' : ''}`}
+                              onClick={() => hasDetail && setExpandedExec(isExpanded ? null : exec.execution_number)}
                             >
-                              {exec.status}
-                            </Badge>
-                            {exec.is_retry && (
-                              <Badge variant="orange" className="ml-1">
-                                retry
-                              </Badge>
-                            )}
-                          </td>
-                          <td className="py-2 pr-3 text-text-muted whitespace-nowrap">
-                            {exec.started_at ? relativeTime(exec.started_at) : '—'}
-                          </td>
-                          <td className="py-2 pr-3 text-text-primary whitespace-nowrap">
-                            {exec.duration_seconds !== null
-                              ? `${exec.duration_seconds.toFixed(2)}s`
-                              : '—'}
-                          </td>
-                          <td className="py-2 pr-3 text-text-primary">
-                            {exec.http_status_code ?? '—'}
-                          </td>
-                          <td className="py-2 pr-3 text-text-primary">
-                            {exec.retry_count}
-                          </td>
-                          <td className="py-2 text-red-400 max-w-xs">
-                            {exec.error_type && (
-                              <div>
-                                <span className="font-medium">{exec.error_type}</span>
-                                {exec.error_message && (
-                                  <p className="text-[11px] text-red-400/80 mt-0.5 whitespace-pre-wrap break-all">
-                                    {exec.error_message}
-                                  </p>
+                              <td className="py-2 pr-3 text-text-muted font-mono">
+                                {exec.execution_number}
+                              </td>
+                              <td className="py-2 pr-3">
+                                <Badge
+                                  variant={
+                                    exec.status === 'success'
+                                      ? 'green'
+                                      : exec.status === 'failed'
+                                        ? 'red'
+                                        : exec.status === 'running'
+                                          ? 'yellow'
+                                          : 'gray'
+                                  }
+                                >
+                                  {exec.status}
+                                </Badge>
+                                {exec.is_retry && (
+                                  <Badge variant="orange" className="ml-1">retry</Badge>
                                 )}
-                              </div>
+                              </td>
+                              <td className="py-2 pr-3 text-text-muted whitespace-nowrap">
+                                {exec.started_at ? relativeTime(exec.started_at) : '—'}
+                              </td>
+                              <td className="py-2 pr-3 text-text-primary whitespace-nowrap">
+                                {exec.duration_seconds !== null ? `${exec.duration_seconds.toFixed(2)}s` : '—'}
+                              </td>
+                              <td className="py-2 pr-3 text-text-primary">
+                                {exec.http_status_code ?? '—'}
+                              </td>
+                              <td className="py-2 pr-3 text-text-primary">
+                                {exec.retry_count}
+                              </td>
+                              <td className="py-2 text-red-400">
+                                {exec.error_type && <span className="font-medium">{exec.error_type}</span>}
+                              </td>
+                              <td className="py-2 pl-2 text-text-muted">
+                                {hasDetail && (
+                                  <ChevronDown className={`h-3.5 w-3.5 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
+                                )}
+                              </td>
+                            </tr>
+                            {isExpanded && (
+                              <tr key={`${exec.execution_number}-detail`}>
+                                <td colSpan={8} className="px-2 pb-3 pt-0">
+                                  <div className="rounded-md bg-bg-primary p-3 space-y-2">
+                                    {exec.error_message && (
+                                      <div>
+                                        <p className="text-[11px] text-text-muted mb-1">Error</p>
+                                        <pre className="text-xs text-red-400 whitespace-pre-wrap break-all">{exec.error_message}</pre>
+                                      </div>
+                                    )}
+                                    {exec.result != null && (
+                                      <JsonBlock label="result" data={exec.result} />
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
                             )}
-                          </td>
-                        </tr>
-                      ))}
+                          </>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
@@ -300,19 +322,14 @@ export default function TaskDetail() {
             )}
           </div>
 
-          {/* Payload & Result */}
-          {(task.task_args.length > 0 ||
-            Object.keys(task.task_kwargs).length > 0 ||
-            (task.result !== null && task.result !== undefined)) && (
-            <Section title="Payload & Result">
+          {/* Payload */}
+          {(task.task_args.length > 0 || Object.keys(task.task_kwargs).length > 0) && (
+            <Section title="Payload">
               {task.task_args.length > 0 && (
                 <JsonBlock label="args" data={task.task_args} />
               )}
               {Object.keys(task.task_kwargs).length > 0 && (
                 <JsonBlock label="kwargs" data={task.task_kwargs} />
-              )}
-              {task.result !== null && task.result !== undefined && (
-                <JsonBlock label="result" data={task.result} />
               )}
             </Section>
           )}

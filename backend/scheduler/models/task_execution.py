@@ -41,6 +41,9 @@ class TaskExecution(models.Model):
     error_type = models.CharField(max_length=255, null=True, blank=True)
     error_traceback = models.TextField(null=True, blank=True, max_length=20000)
 
+    # Result
+    result = models.JSONField(null=True, blank=True)
+
     # Retry info
     retry_count = models.PositiveIntegerField(default=0)
     is_retry = models.BooleanField(default=False)
