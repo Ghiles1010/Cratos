@@ -1,8 +1,6 @@
 from django.utils import timezone
 from .base import TaskState
 from scheduler.models.enums import TaskStatus
-
-
 class ScheduledState(TaskState):
     status = TaskStatus.SCHEDULED
 

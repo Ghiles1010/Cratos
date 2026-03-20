@@ -4,6 +4,7 @@ from django.db import models
 from django.utils import timezone
 
 from .enums import RetryPolicy, ScheduleType, TaskStatus
+from scheduler.domain.scheduling.next_run_computer import NextRunComputer
 
 
 class TaskSchedule(models.Model):
@@ -114,6 +115,10 @@ class TaskSchedule(models.Model):
         if self.started_at and self.completed_at:
             return (self.completed_at - self.started_at).total_seconds()
         return None
+
+    def save(self, *args, **kwargs):
+        self.next_run_at = NextRunComputer(self).compute()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.task_name} ({self.task_id}) - {self.status}"

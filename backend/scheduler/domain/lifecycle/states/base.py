@@ -2,6 +2,7 @@ from abc import ABC
 from scheduler.models import FailureOutcome, TaskStatus
 
 
+
 class TaskState(ABC):
     status: TaskStatus
 
