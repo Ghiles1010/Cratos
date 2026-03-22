@@ -7,6 +7,7 @@ import {
   LogOut,
   Clock,
   BarChart3,
+  User,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -17,9 +18,10 @@ const navItems: Array<{
   end?: boolean;
 }> = [
   { to: '/', icon: CheckSquare, label: 'Tasks', end: true },
-  { to: '/api-keys', icon: Key, label: 'Secrets' },
+  { to: '/secrets', icon: Key, label: 'Secrets' },
   { to: '/health', icon: Activity, label: 'Health' },
   { to: '/metrics', icon: BarChart3, label: 'Metrics' },
+  { to: '/account', icon: User, label: 'Account' },
 ];
 
 export default function Layout() {

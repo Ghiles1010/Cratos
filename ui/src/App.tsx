@@ -7,7 +7,8 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import Login from '@/pages/Login';
 import Tasks from '@/pages/Tasks';
 import TaskDetail from '@/pages/TaskDetail';
-import ApiKeys from '@/pages/ApiKeys';
+import Secrets from '@/pages/Secrets';
+import Account from '@/pages/Account';
 import Health from '@/pages/Health';
 import Metrics from '@/pages/Metrics';
 
@@ -35,7 +36,8 @@ export default function App() {
               <Route index element={<Tasks />} />
               <Route path="tasks" element={<Navigate to="/" replace />} />
               <Route path="tasks/:taskId" element={<TaskDetail />} />
-              <Route path="api-keys" element={<ApiKeys />} />
+              <Route path="secrets" element={<Secrets />} />
+              <Route path="account" element={<Account />} />
               <Route path="health" element={<Health />} />
               <Route path="metrics" element={<Metrics />} />
             </Route>
