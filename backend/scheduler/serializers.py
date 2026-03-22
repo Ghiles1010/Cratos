@@ -29,6 +29,39 @@ class WebhookPayloadSerializer(serializers.ModelSerializer):
 
 
 class TaskScheduleSerializer(serializers.ModelSerializer):
+    """
+    Represents a scheduled task.
+
+    ## Schedule types
+
+    Set `schedule_type` to one of:
+
+    - **`one_off`** — runs once. Provide `schedule_time` (ISO 8601 UTC) or omit to run immediately.
+      - Required: *(none beyond the common fields)*
+      - Optional: `schedule_time`, `task_timezone`
+      - Forbidden: `cron_expression`, `interval_seconds`
+
+    - **`cron`** — recurring on a cron schedule. Provide a standard 5-field cron expression.
+      - Required: `cron_expression`
+      - Optional: `task_timezone`, `ends_at`
+      - Forbidden: `schedule_time`, `interval_seconds`
+
+    - **`interval`** — recurring every N seconds.
+      - Required: `interval_seconds` (positive integer)
+      - Optional: `ends_at`
+      - Forbidden: `schedule_time`, `cron_expression`
+
+    ## Retry policies
+
+    Set `retry_policy` to one of `none` (default), `fixed`, `linear`, `exponential`.
+    When using any retry policy other than `none`, `max_retries` must be > 0.
+
+    ## Webhook delivery
+
+    Cratos will POST to `callback_url` with the task payload and an HMAC-SHA256
+    signature header (`X-Cratos-Signature`) for verification.
+    """
+
     task_id = serializers.UUIDField(read_only=True)
     user = serializers.ReadOnlyField(source='user.username')
     execution_time = serializers.ReadOnlyField()
@@ -147,22 +180,38 @@ class TaskScheduleSerializer(serializers.ModelSerializer):
 
     def validate(self, attrs):
         schedule_type = attrs.get('schedule_type', ScheduleType.ONE_OFF)
+        errors = {}
 
-        if schedule_type == ScheduleType.CRON and not attrs.get('cron_expression'):
-            raise serializers.ValidationError({
-                'cron_expression': "Required for cron schedule type.",
-            })
-        if schedule_type == ScheduleType.INTERVAL and not attrs.get('interval_seconds'):
-            raise serializers.ValidationError({
-                'interval_seconds': "Required for interval schedule type.",
-            })
+        if schedule_type == ScheduleType.ONE_OFF:
+            if attrs.get('cron_expression'):
+                errors['cron_expression'] = "Not used for one_off tasks. Remove it or set schedule_type to 'cron'."
+            if attrs.get('interval_seconds'):
+                errors['interval_seconds'] = "Not used for one_off tasks. Remove it or set schedule_type to 'interval'."
+
+        elif schedule_type == ScheduleType.CRON:
+            if not attrs.get('cron_expression'):
+                errors['cron_expression'] = "Required for cron tasks. Example: '0 9 * * 1-5' (weekdays at 9am)."
+            if attrs.get('schedule_time'):
+                errors['schedule_time'] = "Not used for cron tasks. Remove it or set schedule_type to 'one_off'."
+            if attrs.get('interval_seconds'):
+                errors['interval_seconds'] = "Not used for cron tasks. Remove it or set schedule_type to 'interval'."
+
+        elif schedule_type == ScheduleType.INTERVAL:
+            if not attrs.get('interval_seconds'):
+                errors['interval_seconds'] = "Required for interval tasks. Provide a positive integer (seconds)."
+            if attrs.get('schedule_time'):
+                errors['schedule_time'] = "Not used for interval tasks. Remove it or set schedule_type to 'one_off'."
+            if attrs.get('cron_expression'):
+                errors['cron_expression'] = "Not used for interval tasks. Remove it or set schedule_type to 'cron'."
+
+        if errors:
+            raise serializers.ValidationError(errors)
 
         # Retry validation
         policy = attrs.get('retry_policy', RetryPolicy.NONE)
-        max_r = attrs.get('max_retries', 0)
-        if policy != RetryPolicy.NONE and max_r == 0:
+        if policy != RetryPolicy.NONE and not attrs.get('max_retries'):
             raise serializers.ValidationError({
-                'max_retries': "Must be > 0 when a retry policy is set.",
+                'max_retries': "Must be > 0 when retry_policy is set. Example: max_retries=3.",
             })
 
         return attrs
