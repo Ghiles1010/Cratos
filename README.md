@@ -19,25 +19,21 @@ Cratos calls your HTTP endpoints on a schedule. Register a URL, pick a schedule,
 **Prerequisites:** Docker and Docker Compose.
 
 ```bash
-git clone https://github.com/Ghiles1010/Cratos.git
-cd cratos
-docker compose up -d --build
+curl -o docker-compose.yml https://raw.githubusercontent.com/Ghiles1010/Cratos-UI/master/docker-compose.yml
+docker compose up -d
 ```
 
 | Service  | URL                    |
 |----------|------------------------|
 | Web UI   | http://localhost:3001  |
-| REST API | http://localhost:9101  |
-| API Docs | http://localhost:9101/api/docs/ |
+| API Docs | http://localhost:3001/api/docs/ |
 
-Default credentials: `admin` / `admin`. Override via environment variables or `.env` file (see `.env.example`):
+Default credentials: `admin` / `admin`. Override via a `.env` file (see `.env.example`):
 
 ```env
 CRATOS_ADMIN_USERNAME=admin
 CRATOS_ADMIN_PASSWORD=yourpassword
 ```
-
-On a remote host, set `VITE_SCHEDULER_API_URL` to your Cratos instance's public address.
 
 ## API Usage
 

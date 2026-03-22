@@ -1,5 +1,4 @@
-# Cratos – Production Docker Compose
-# Usage: docker compose up -d
+# Cratos – Docker Compose
 
 x-backend-env: &backend-env
   environment:
@@ -23,6 +22,8 @@ services:
       POSTGRES_PASSWORD: ${DB_PASSWORD:-cratos_password}
     volumes:
       - cratos_pg_data:/var/lib/postgresql/data
+    ports:
+      - "${CRATOS_POSTGRES_PORT:-9433}:5432"
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-cratos}"]
@@ -33,6 +34,8 @@ services:
   # ── Redis ──
   redis:
     image: redis:7-alpine
+    ports:
+      - "${CRATOS_REDIS_PORT:-9638}:6379"
     volumes:
       - cratos_redis_data:/data
     restart: unless-stopped
@@ -44,10 +47,14 @@ services:
 
   # ── Django API ──
   web:
-    image: ${DOCKERHUB_USERNAME:-ghiles01}/cratos:latest
+    build: ./backend
     entrypoint: ["bash", "/app/entrypoint.sh"]
     command: uv run python manage.py runserver 0.0.0.0:8001
     <<: *backend-env
+    volumes:
+      - ./backend:/app
+    ports:
+      - "${CRATOS_API_PORT:-9101}:8001"
     restart: unless-stopped
     extra_hosts:
       - "host.docker.internal:host-gateway"
@@ -65,9 +72,11 @@ services:
 
   # ── Celery Worker ──
   worker:
-    image: ${DOCKERHUB_USERNAME:-ghiles01}/cratos:latest
+    build: ./backend
     command: uv run celery -A config worker --loglevel=info
     <<: *backend-env
+    volumes:
+      - ./backend:/app
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
@@ -77,9 +86,11 @@ services:
 
   # ── Dispatcher ──
   dispatcher:
-    image: ${DOCKERHUB_USERNAME:-ghiles01}/cratos:latest
+    build: ./backend
     command: uv run python manage.py run_dispatcher_loop --interval=10
     <<: *backend-env
+    volumes:
+      - ./backend:/app
     extra_hosts:
       - "host.docker.internal:host-gateway"
     restart: unless-stopped
@@ -87,12 +98,19 @@ services:
       web:
         condition: service_healthy
 
-  # ── React UI (proxies API via nginx) ──
+  # ── React UI ──
   ui:
-    image: ${DOCKERHUB_USERNAME:-ghiles01}/cratos-ui:latest
+    build:
+      context: ./ui
+      args:
+        - VITE_SCHEDULER_API_URL=${CRATOS_API_URL:-http://localhost:9101}
     ports:
       - "${CRATOS_UI_PORT:-3001}:3001"
+    environment:
+      - NODE_ENV=production
     restart: unless-stopped
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - web
 

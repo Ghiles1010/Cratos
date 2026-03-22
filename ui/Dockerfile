@@ -8,9 +8,6 @@ RUN npm ci
 
 COPY . .
 
-ARG VITE_SCHEDULER_API_URL
-ENV VITE_SCHEDULER_API_URL=$VITE_SCHEDULER_API_URL
-
 RUN npm run build
 
 # Production stage
