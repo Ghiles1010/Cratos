@@ -15,14 +15,17 @@ class TaskViewSet(viewsets.ModelViewSet):
     permission_classes = [IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
     filterset_fields = ["status"]
-    
 
     def get_queryset(self):
-        return (
+        qs = (
             TaskSchedule.objects
             .filter(user=self.request.user)
             .order_by("next_run_at", "created_at")
         )
+        search = self.request.query_params.get("search", "").strip()
+        if search:
+            qs = qs.filter(task_name__icontains=search)
+        return qs
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

@@ -25,28 +25,18 @@ export default function Tasks() {
     page,
     pageSize,
     autoRefresh,
+    search,
   });
 
   const tasks = data?.results ?? [];
   const totalCount = data?.count ?? 0;
   const totalPages = Math.ceil(totalCount / pageSize);
 
-  // Client-side filtering (on top of server pagination)
+  // Client-side status filter only (search is server-side)
   const filtered = useMemo(() => {
-    let list = tasks;
-    if (statusFilter !== 'all') {
-      list = list.filter((t) => t.status === statusFilter);
-    }
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (t) =>
-          t.task_name.toLowerCase().includes(q) ||
-          t.task_id.toLowerCase().includes(q),
-      );
-    }
-    return list;
-  }, [tasks, statusFilter, search]);
+    if (statusFilter === 'all') return tasks;
+    return tasks.filter((t) => t.status === statusFilter);
+  }, [tasks, statusFilter]);
 
   // Stats from current page
   const stats = useMemo(() => {
@@ -117,7 +107,7 @@ export default function Tasks() {
             type="text"
             placeholder="Search tasks…"
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => { setSearch(e.target.value); setPage(1); }}
             className="h-8 w-56 rounded-md border border-border bg-bg-input pl-8 pr-3 text-xs text-text-primary placeholder:text-text-muted outline-none focus:border-accent focus:ring-2 focus:ring-accent/20"
           />
         </div>

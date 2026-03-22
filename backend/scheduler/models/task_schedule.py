@@ -68,8 +68,6 @@ class TaskSchedule(models.Model):
         default=TaskStatus.SCHEDULED,
     )
 
-    result = models.JSONField(null=True, blank=True)
-
     started_at = models.DateTimeField(null=True, blank=True)
     completed_at = models.DateTimeField(null=True, blank=True)
 

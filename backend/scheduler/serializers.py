@@ -49,7 +49,7 @@ class TaskScheduleSerializer(serializers.ModelSerializer):
             # retry
             'retry_policy', 'max_retries', 'retry_delay_seconds', 'retry_count',
             # status
-            'status', 'result',
+            'status',
             # meta
             'user', 'created_at', 'updated_at',
             'started_at', 'completed_at',
@@ -58,7 +58,7 @@ class TaskScheduleSerializer(serializers.ModelSerializer):
             'execution_history',
         ]
         read_only_fields = [
-            'task_id', 'user', 'status', 'result',
+            'task_id', 'user', 'status',
             'created_at', 'updated_at', 'started_at', 'completed_at',
             'next_run_at', 'last_run_at', 'run_count', 'retry_count',
             'execution_time', 'is_overdue', 'is_recurring', 'scheduler_info',
@@ -102,6 +102,7 @@ class TaskScheduleSerializer(serializers.ModelSerializer):
                 'completed_at': e.completed_at.isoformat() if e.completed_at else None,
                 'duration_seconds': e.duration_seconds,
                 'http_status_code': e.http_status_code,
+                'http_response_body': e.http_response_body,
                 'error_type': e.error_type,
                 'error_message': e.error_message,
                 'retry_count': e.retry_count,

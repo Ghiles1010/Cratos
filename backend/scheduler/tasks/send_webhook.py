@@ -37,16 +37,27 @@ def send_webhook(task_id: str):
         return
 
     with transaction.atomic():
-        last_exec = TaskExecution.objects.filter(task=task).order_by('-execution_number').first()
+        last_exec = (
+            TaskExecution.objects
+            .select_for_update()
+            .filter(task=task)
+            .order_by('-execution_number')
+            .first()
+        )
         exec_number = (last_exec.execution_number + 1) if last_exec else 1
-        execution = TaskExecution.objects.create(
+        execution, created = TaskExecution.objects.get_or_create(
             task=task,
             execution_number=exec_number,
-            status=ExecutionStatus.RUNNING,
-            started_at=started_at,
-            retry_count=task.retry_count,
-            is_retry=task.retry_count > 0,
+            defaults={
+                'status': ExecutionStatus.RUNNING,
+                'started_at': started_at,
+                'retry_count': task.retry_count,
+                'is_retry': task.retry_count > 0,
+            },
         )
+        if not created:
+            logger.warning("send_webhook: duplicate execution for task %s #%d — skipping", task_id, exec_number)
+            return
 
     if task.status == TaskStatus.PENDING:
         TaskHandler(task).begin_execution()
