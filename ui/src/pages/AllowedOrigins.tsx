@@ -70,24 +70,24 @@ export default function AllowedOrigins() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-text-primary">Allowed Origins</h1>
+        <h1 className="font-mono text-lg font-bold text-text-primary tracking-tight">Allowed Origins</h1>
         <p className="mt-1 text-sm text-text-muted">
           Callback URLs must match one of these origins. This prevents SSRF attacks.
         </p>
       </div>
 
       {/* Docker hint */}
-      <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">
+      <div className="border border-accent/30 bg-accent/5 px-4 py-3 text-sm text-text-secondary font-mono">
         <strong>Running inside Docker?</strong> Use{' '}
-        <code className="rounded bg-amber-500/20 px-1 py-0.5 font-mono text-xs">host.docker.internal</code>{' '}
+        <code className="bg-accent/10 px-1 py-0.5 font-mono text-xs text-accent">host.docker.internal</code>{' '}
         instead of{' '}
-        <code className="rounded bg-amber-500/20 px-1 py-0.5 font-mono text-xs">localhost</code> — Cratos
-        runs in a container where <code className="rounded bg-amber-500/20 px-1 py-0.5 font-mono text-xs">localhost</code> refers
+        <code className="bg-accent/10 px-1 py-0.5 font-mono text-xs text-accent">localhost</code> — Cratos
+        runs in a container where <code className="bg-accent/10 px-1 py-0.5 font-mono text-xs text-accent">localhost</code> refers
         to the container itself, not your machine.
       </div>
 
       {/* Add form */}
-      <div className="rounded-lg border border-border bg-bg-card overflow-hidden">
+      <div className="border border-border bg-bg-card overflow-hidden">
         <div className="border-b border-border px-5 py-3">
           <h2 className="text-sm font-semibold text-text-primary">Add Origin</h2>
         </div>
@@ -96,7 +96,7 @@ export default function AllowedOrigins() {
             <select
               value={scheme}
               onChange={e => handleSchemeChange(e.target.value)}
-              className="rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+              className="border border-border bg-bg-secondary px-3 py-2 text-sm font-mono text-text-primary outline-none focus:border-accent"
             >
               <option value="https">https</option>
               <option value="http">http</option>
@@ -107,7 +107,7 @@ export default function AllowedOrigins() {
               value={host}
               onChange={e => setHost(e.target.value)}
               required
-              className="flex-1 min-w-[180px] rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:outline-none focus:ring-1 focus:ring-accent"
+              className="flex-1 min-w-[180px] border border-border bg-bg-secondary px-3 py-2 text-sm font-mono text-text-primary placeholder:text-text-muted outline-none focus:border-accent"
             />
             <input
               type="number"
@@ -117,7 +117,7 @@ export default function AllowedOrigins() {
               required
               min={1}
               max={65535}
-              className="w-24 rounded-lg border border-border bg-bg-secondary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent"
+              className="w-24 border border-border bg-bg-secondary px-3 py-2 text-sm font-mono text-text-primary outline-none focus:border-accent"
             />
             <Button type="submit" variant="primary" size="sm" disabled={adding}>
               {adding ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
@@ -128,7 +128,7 @@ export default function AllowedOrigins() {
       </div>
 
       {/* List */}
-      <div className="rounded-lg border border-border bg-bg-card overflow-hidden">
+      <div className="border border-border bg-bg-card overflow-hidden">
         <div className="border-b border-border px-5 py-3">
           <h2 className="text-sm font-semibold text-text-primary">Whitelisted Origins</h2>
         </div>

@@ -40,7 +40,7 @@ function CredentialCard({
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center rounded-lg border border-border bg-bg-card py-16">
+      <div className="flex items-center justify-center border border-border bg-bg-card py-16">
         <Loader2 className="h-5 w-5 animate-spin text-text-muted" />
       </div>
     );
@@ -48,7 +48,7 @@ function CredentialCard({
 
   if (error) {
     return (
-      <div className="flex flex-col items-center gap-3 rounded-lg border border-red-500/30 bg-red-500/10 py-12">
+      <div className="flex flex-col items-center gap-3 border border-red-500/30 bg-red-500/10 py-12">
         <AlertCircle className="h-8 w-8 text-red-400" />
         <p className="text-sm text-red-400">{error}</p>
         <Button variant="secondary" size="sm" onClick={onRetry}>
@@ -59,7 +59,7 @@ function CredentialCard({
   }
 
   return (
-    <div className="rounded-lg border border-border bg-bg-card overflow-hidden">
+    <div className="border border-border bg-bg-card overflow-hidden">
       <div className="border-b border-border px-5 py-3">
         <h2 className="text-sm font-semibold text-text-primary">{title}</h2>
         <p className="mt-0.5 text-xs text-text-muted">{description}</p>
@@ -67,7 +67,7 @@ function CredentialCard({
       <div className="p-5 space-y-4">
         {value ? (
           <>
-            <div className="flex items-center gap-2 rounded-lg border border-border bg-bg-secondary px-4 py-3">
+            <div className="flex items-center gap-2 border border-border bg-bg-secondary px-4 py-3">
               <code className="flex-1 text-[13px] font-mono text-text-primary break-all">
                 {show ? value : '•'.repeat(maskLength)}
               </code>
@@ -182,7 +182,7 @@ export default function ApiKeys() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-text-primary">Secrets</h1>
+        <h1 className="font-mono text-lg font-bold text-text-primary tracking-tight">Secrets</h1>
         <p className="mt-1 text-sm text-text-muted">
           Manage your credentials for programmatic access and webhook verification
         </p>

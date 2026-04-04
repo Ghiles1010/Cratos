@@ -50,7 +50,7 @@ function ChangePasswordCard() {
   };
 
   return (
-    <div className="rounded-lg border border-border bg-bg-card overflow-hidden">
+    <div className="border border-border bg-bg-card overflow-hidden">
       <div className="border-b border-border px-5 py-3">
         <h2 className="text-sm font-semibold text-text-primary">Change Password</h2>
         <p className="mt-0.5 text-xs text-text-muted">Update your account password</p>
@@ -122,7 +122,7 @@ function ChangeUsernameCard() {
   };
 
   return (
-    <div className="rounded-lg border border-border bg-bg-card overflow-hidden">
+    <div className="border border-border bg-bg-card overflow-hidden">
       <div className="border-b border-border px-5 py-3">
         <h2 className="text-sm font-semibold text-text-primary">Change Username</h2>
         <p className="mt-0.5 text-xs text-text-muted">Update your account username</p>
@@ -170,7 +170,7 @@ export default function Account() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold text-text-primary">Account</h1>
+        <h1 className="font-mono text-lg font-bold text-text-primary tracking-tight">Account</h1>
         <p className="mt-1 text-sm text-text-muted">
           Manage your account credentials
         </p>

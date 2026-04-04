@@ -7,11 +7,8 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import Login from '@/pages/Login';
 import Tasks from '@/pages/Tasks';
 import TaskDetail from '@/pages/TaskDetail';
-import Secrets from '@/pages/Secrets';
-import Account from '@/pages/Account';
-import Health from '@/pages/Health';
 import Metrics from '@/pages/Metrics';
-import AllowedOrigins from '@/pages/AllowedOrigins';
+import Settings from '@/pages/Settings';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -37,11 +34,8 @@ export default function App() {
               <Route index element={<Tasks />} />
               <Route path="tasks" element={<Navigate to="/" replace />} />
               <Route path="tasks/:taskId" element={<TaskDetail />} />
-              <Route path="secrets" element={<Secrets />} />
-              <Route path="allowed-origins" element={<AllowedOrigins />} />
-              <Route path="account" element={<Account />} />
-              <Route path="health" element={<Health />} />
               <Route path="metrics" element={<Metrics />} />
+              <Route path="settings" element={<Settings />} />
             </Route>
           </Routes>
         </BrowserRouter>

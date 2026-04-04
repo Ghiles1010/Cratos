@@ -196,7 +196,7 @@ export default function TaskDetail() {
           </Section>
 
           {/* Execution History */}
-          <div className="rounded-lg border border-border bg-bg-secondary p-3">
+          <div className="border border-border bg-bg-secondary p-3">
             <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted mb-3">
               Execution History
             </p>
@@ -274,7 +274,7 @@ export default function TaskDetail() {
                             {isExpanded && (
                               <tr key={`${exec.execution_number}-detail`}>
                                 <td colSpan={8} className="px-2 pb-3 pt-0">
-                                  <div className="rounded-md bg-bg-primary p-3 space-y-2">
+                                  <div className="bg-bg-primary p-3 space-y-2">
                                     {exec.error_message && (
                                       <div>
                                         <p className="text-[11px] text-text-muted mb-1">Error</p>
@@ -395,20 +395,20 @@ export default function TaskDetail() {
           {execStats && (
             <Section title="Execution Stats">
               <div className="grid grid-cols-2 gap-3 mb-3">
-                <div className="rounded-md bg-bg-primary p-2.5 text-center">
+                <div className="bg-bg-primary p-2.5 text-center">
                   <p className="text-xl font-bold text-emerald-400">
                     {execStats.successRate}%
                   </p>
                   <p className="text-[11px] text-text-muted mt-0.5">Success rate</p>
                 </div>
-                <div className="rounded-md bg-bg-primary p-2.5 text-center">
+                <div className="bg-bg-primary p-2.5 text-center">
                   <p className="text-xl font-bold text-text-primary">
                     {execStats.total}
                   </p>
                   <p className="text-[11px] text-text-muted mt-0.5">Total runs</p>
                 </div>
                 {execStats.avgDuration !== null && (
-                  <div className="rounded-md bg-bg-primary p-2.5 text-center col-span-2">
+                  <div className="bg-bg-primary p-2.5 text-center col-span-2">
                     <p className="text-xl font-bold text-text-primary">
                       {execStats.avgDuration.toFixed(2)}s
                     </p>
@@ -417,7 +417,7 @@ export default function TaskDetail() {
                 )}
               </div>
               {execStats.lastError && (
-                <div className="rounded-md bg-red-500/10 border border-red-500/20 px-2.5 py-2">
+                <div className="bg-red-500/10 border border-red-500/20 px-2.5 py-2">
                   <p className="text-[11px] text-text-muted mb-0.5">Last error type</p>
                   <p className="text-xs text-red-400 font-medium">{execStats.lastError}</p>
                 </div>
@@ -427,7 +427,7 @@ export default function TaskDetail() {
 
           {/* Execution Status Chart */}
           {chartData.length > 0 && (
-            <div className="rounded-lg border border-border bg-bg-secondary p-3">
+            <div className="border border-border bg-bg-secondary p-3">
               <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted mb-3">
                 Execution Breakdown
               </p>

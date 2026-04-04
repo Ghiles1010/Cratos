@@ -34,7 +34,7 @@ export function DrawerContent({
           <DialogPrimitive.Title className="text-base font-semibold text-text-primary">
             {title}
           </DialogPrimitive.Title>
-          <DialogPrimitive.Close className="rounded-md p-1.5 text-text-muted hover:text-text-primary hover:bg-bg-card-hover transition-colors">
+          <DialogPrimitive.Close className="p-1.5 text-text-muted hover:text-text-primary hover:bg-bg-card-hover transition-colors">
             <X size={16} />
           </DialogPrimitive.Close>
         </div>

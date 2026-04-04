@@ -135,9 +135,10 @@ export const auth = {
 // ── Tasks ────────────────────────────────────────────────────────────────────
 
 export const tasks = {
-  list: (page = 1, pageSize = 20, search = '') => {
+  list: (page = 1, pageSize = 20, search = '', status = '') => {
     const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
     if (search) params.set('search', search);
+    if (status) params.set('status', status);
     return request<TaskListResponse>(`${BASE}/api/tasks/?${params}`, opts());
   },
   get: (id: string) => request<Task>(`${BASE}/api/tasks/${id}/`, opts()),

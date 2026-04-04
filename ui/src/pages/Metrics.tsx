@@ -43,7 +43,7 @@ export default function Metrics() {
           onClick={() => void refetch()}
           disabled={isFetching}
           className={cn(
-            'inline-flex items-center gap-1.5 rounded-md border border-border bg-bg-card px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-text-primary',
+            'inline-flex items-center gap-1.5 border border-border bg-bg-card px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-text-primary',
             isFetching && 'opacity-70',
           )}
         >

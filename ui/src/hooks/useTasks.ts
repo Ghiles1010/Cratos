@@ -6,20 +6,22 @@ interface UseTasksOptions {
   pageSize?: number;
   autoRefresh?: boolean;
   search?: string;
+  status?: string;
 }
 
 /**
- * Fetch paginated tasks with optional auto-refresh and server-side search.
+ * Fetch paginated tasks with optional auto-refresh, server-side search and status filter.
  */
 export function useTasks({
   page = 1,
   pageSize = 20,
   autoRefresh = false,
   search = '',
+  status = '',
 }: UseTasksOptions = {}) {
   return useQuery<TaskListResponse>({
-    queryKey: ['tasks', page, pageSize, search],
-    queryFn: () => tasks.list(page, pageSize, search),
+    queryKey: ['tasks', page, pageSize, search, status],
+    queryFn: () => tasks.list(page, pageSize, search, status),
     refetchInterval: autoRefresh ? 10_000 : false,
     placeholderData: (prev) => prev,
   });

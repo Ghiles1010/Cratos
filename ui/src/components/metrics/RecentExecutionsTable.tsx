@@ -12,7 +12,7 @@ export function RecentExecutionsTable({
   generatedAt,
 }: RecentExecutionsTableProps) {
   return (
-    <div className="rounded-lg border border-border bg-bg-card">
+    <div className="border border-border bg-bg-card">
       <div className="flex items-center justify-between border-b border-border px-4 py-3">
         <div className="flex items-center gap-2">
           <Activity className="h-4 w-4 text-accent" />

@@ -6,7 +6,7 @@ interface ChartCardProps {
 
 export function ChartCard({ title, empty, children }: ChartCardProps) {
   return (
-    <div className="rounded-lg border border-border bg-bg-card p-4">
+    <div className="border border-border bg-bg-card p-4">
       <div className="mb-3 flex items-center justify-between">
         <h2 className="text-sm font-semibold text-text-primary">{title}</h2>
         {empty && (

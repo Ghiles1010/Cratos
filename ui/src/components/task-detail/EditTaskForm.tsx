@@ -106,7 +106,7 @@ export function EditTaskForm({ task, onSubmit, onCancel, isSubmitting }: Props) 
         />
       </div>
 
-      <div className="rounded-md border border-border p-3 space-y-3">
+      <div className="border border-border p-3 space-y-3">
         <p className="text-[11px] font-semibold uppercase tracking-wider text-text-muted">Retry</p>
         <Select
           id="retry_policy"

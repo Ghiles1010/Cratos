@@ -32,9 +32,9 @@ export default function Health() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-bold text-text-primary">Health</h1>
+      <h1 className="font-mono text-lg font-bold text-text-primary tracking-tight">Health</h1>
 
-      <div className="flex items-center justify-between rounded-lg border border-border bg-bg-card p-5">
+      <div className="flex items-center justify-between border border-border bg-bg-card p-5">
         <div className="flex items-center gap-3">
           {isLoading ? (
             <Loader2 className="h-4 w-4 animate-spin text-text-muted" />

@@ -27,7 +27,7 @@ export function DialogContent({
       <DialogPrimitive.Content
         className={cn(
           'fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2',
-          'w-full max-w-lg rounded-xl border border-border bg-bg-card p-6 shadow-2xl',
+          'w-full max-w-lg border border-border bg-bg-card p-6',
           'animate-fade-in focus:outline-none',
           className,
         )}
@@ -43,7 +43,7 @@ export function DialogContent({
               </DialogPrimitive.Description>
             )}
           </div>
-          <DialogPrimitive.Close className="rounded-md p-1.5 text-text-muted hover:text-text-primary hover:bg-bg-card-hover transition-colors">
+          <DialogPrimitive.Close className="p-1.5 text-text-muted hover:text-text-primary hover:bg-bg-card-hover transition-colors">
             <X size={16} />
           </DialogPrimitive.Close>
         </div>

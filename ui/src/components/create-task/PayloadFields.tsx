@@ -20,7 +20,7 @@ export function PayloadFields({ register, errors }: PayloadFieldsProps) {
           <textarea
             placeholder='["arg1", "arg2"]'
             rows={2}
-            className="w-full rounded-md border border-border bg-bg-input px-3 py-2 text-sm text-text-primary font-mono placeholder:text-text-muted outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 resize-none"
+            className="w-full border border-border bg-bg-input px-3 py-2 text-sm text-text-primary font-mono placeholder:text-text-muted outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 resize-none"
             {...register('task_args_json')}
           />
           {errors.task_args_json && (
@@ -36,7 +36,7 @@ export function PayloadFields({ register, errors }: PayloadFieldsProps) {
           <textarea
             placeholder='{"key": "value"}'
             rows={2}
-            className="w-full rounded-md border border-border bg-bg-input px-3 py-2 text-sm text-text-primary font-mono placeholder:text-text-muted outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 resize-none"
+            className="w-full border border-border bg-bg-input px-3 py-2 text-sm text-text-primary font-mono placeholder:text-text-muted outline-none focus:border-accent focus:ring-2 focus:ring-accent/20 resize-none"
             {...register('task_kwargs_json')}
           />
           {errors.task_kwargs_json && (

@@ -3,6 +3,10 @@ export default {
   content: ['./index.html', './src/**/*.{js,ts,jsx,tsx}'],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ['Inter', 'system-ui', 'sans-serif'],
+        mono: ['JetBrains Mono', 'monospace'],
+      },
       colors: {
         bg: {
           primary: '#0c0c0f',
@@ -22,9 +26,9 @@ export default {
           muted: '#71717a',
         },
         accent: {
-          DEFAULT: '#6366f1',
-          hover: '#5558e6',
-          muted: 'rgba(99,102,241,0.15)',
+          DEFAULT: '#0891b2',
+          hover: '#0e7490',
+          muted: 'rgba(8,145,178,0.15)',
         },
       },
       animation: {
