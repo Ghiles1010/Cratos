@@ -2,7 +2,7 @@
 version: '3'
 
 vars:
-  DB_USER: cratos
+  DC: docker compose -f docker-compose.dev.yml
 
 tasks:
   default:
@@ -15,56 +15,45 @@ tasks:
   build:
     desc: Build all Docker images
     cmds:
-      - docker compose build
+      - "{{.DC}} build"
 
   up:
     desc: Start all services
     cmds:
-      - echo "Starting Cratos..."
-      - docker compose up -d
-      - task: wait-for-services
+      - "{{.DC}} up -d"
       - echo "Cratos is ready – UI http://localhost:3001 | API http://localhost:9101"
 
   down:
     desc: Stop all services
     cmds:
-      - docker compose down
+      - "{{.DC}} down"
 
   restart:
     desc: "Restart all services (or a specific one: task restart -- web)"
     cmds:
-      - docker compose restart {{.CLI_ARGS}}
+      - "{{.DC}} restart {{.CLI_ARGS}}"
 
   clean:
     desc: Stop all services, remove containers, networks, and volumes
     cmds:
-      - docker compose down -v --remove-orphans
+      - "{{.DC}} down -v --remove-orphans"
 
   logs:
     desc: Tail logs from all services
     cmds:
-      - docker compose logs -f
-
-  wait-for-services:
-    desc: Wait for PostgreSQL and Redis to be ready
-    cmds:
-      - |
-        until docker compose exec -T postgres pg_isready -U {{.DB_USER}}; do sleep 2; done
-      - |
-        until docker compose exec -T redis redis-cli ping; do sleep 2; done
-      - echo "Services are ready!"
+      - "{{.DC}} logs -f"
 
   # ── Database ──
 
   migrate:
     desc: Run database migrations
     cmds:
-      - docker compose exec web uv run python manage.py migrate
+      - "{{.DC}} exec web uv run python manage.py migrate"
 
   makemigrations:
     desc: Generate migration files
     cmds:
-      - docker compose exec web uv run python manage.py makemigrations
+      - "{{.DC}} exec web uv run python manage.py makemigrations"
 
   # ── Django ──
 
@@ -72,50 +61,29 @@ tasks:
     desc: Open Django shell
     interactive: true
     cmds:
-      - docker compose exec web uv run python manage.py shell
+      - "{{.DC}} exec web uv run python manage.py shell"
 
   manage:
     desc: "Run a Django management command (usage: task manage -- <cmd>)"
     cmds:
-      - docker compose exec web uv run python manage.py {{.CLI_ARGS}}
+      - "{{.DC}} exec web uv run python manage.py {{.CLI_ARGS}}"
 
   get-api-key:
     desc: "Print the API key for a user"
     cmds:
-      - docker compose exec web uv run python manage.py get_api_key --username={{.USERNAME}} --password={{.PASSWORD}}
+      - "{{.DC}} exec web uv run python manage.py get_api_key --username={{.USERNAME}} --password={{.PASSWORD}}"
     requires:
       vars: [USERNAME, PASSWORD]
 
   test:
     desc: Run Django tests (uses SQLite in-memory, no PostgreSQL needed)
     cmds:
-      - docker compose exec web uv run python manage.py test --settings=config.settings_test
+      - "{{.DC}} exec web uv run python manage.py test --settings=config.settings_test"
 
   # ── Frontend ──
 
-  ui:install:
-    desc: Install UI dependencies
-    dir: ui
-    cmds:
-      - npm install
-
-  ui:dev:
-    desc: Start UI development server
-    dir: ui
-    cmds:
-      - npm run dev
-
   ui:rebuild:
-    desc: Rebuild and restart the UI container
+    desc: Rebuild and restart the UI container (e.g. after package.json changes)
     cmds:
-      - docker compose build --no-cache ui
-      - docker compose restart ui
-
-  # ── First-time setup ──
-
-  init:
-    desc: Full first-time setup – build and start (migrations + bootstrap run automatically)
-    cmds:
-      - task: build
-      - task: up
-      - echo "Cratos is fully initialized!"
+      - "{{.DC}} build --no-cache ui"
+      - "{{.DC}} restart ui"
