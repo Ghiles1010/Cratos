@@ -206,8 +206,8 @@ export default function TaskDetail() {
                             {exec.is_retry && <Badge variant="orange">retry</Badge>}
                           </div>
                         </td>
-                        <td className="px-4 py-2.5 font-mono text-text-muted whitespace-nowrap">
-                          {exec.started_at ? relativeTime(exec.started_at) : '—'}
+                        <td className="px-4 py-2.5 font-mono text-text-muted whitespace-nowrap" title={exec.started_at ? relativeTime(exec.started_at) : ''}>
+                          {exec.started_at ? fmtDate(exec.started_at) : '—'}
                         </td>
                         <td className="px-4 py-2.5 font-mono text-text-primary tabular-nums">
                           {exec.duration_seconds != null ? `${exec.duration_seconds.toFixed(2)}s` : '—'}
