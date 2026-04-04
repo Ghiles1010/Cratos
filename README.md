@@ -126,7 +126,11 @@ Get your signing secret from the UI (Secrets page).
 - **Redirect blocking** — 3xx responses are treated as errors, not followed
 - **API key auth** — `Authorization: Api-Key <key>` for all programmatic access
 
-Add an allowed origin (required before scheduling tasks):
+**No outbound requests are made by default.** Cratos enforces an allowlist of origins — a callback URL is rejected unless its origin has been explicitly whitelisted. This prevents SSRF attacks and ensures Cratos only ever calls endpoints you control. Add origins from the UI under **Origins**, or via the API below.
+
+If your receiver runs on the same host as Cratos, use `host.docker.internal` instead of `localhost` — inside Docker, `localhost` resolves to the container, not your machine.
+
+Add an allowed origin via API:
 
 ```bash
 curl -X POST http://localhost:9101/api/webhooks/allowed-origins/ \

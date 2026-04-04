@@ -175,6 +175,23 @@ export const account = {
     request<{ detail: string; username: string }>(`${BASE}/api/auth/change-username/`, opts('POST', { password, new_username })),
 };
 
+// ── Allowed Origins ──────────────────────────────────────────────────────────
+
+export interface AllowedOrigin {
+  id: number;
+  scheme: string;
+  host: string;
+  port: number;
+}
+
+export const allowedOrigins = {
+  list: () => request<AllowedOrigin[]>(`${BASE}/api/webhooks/allowed-origins/`, opts()),
+  create: (data: Omit<AllowedOrigin, 'id'>) =>
+    request<AllowedOrigin>(`${BASE}/api/webhooks/allowed-origins/`, opts('POST', data)),
+  delete: (id: number) =>
+    request<void>(`${BASE}/api/webhooks/allowed-origins/${id}/`, opts('DELETE')),
+};
+
 // ── Health ───────────────────────────────────────────────────────────────────
 
 export const health = {

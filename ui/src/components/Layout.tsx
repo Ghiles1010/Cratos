@@ -8,6 +8,7 @@ import {
   Clock,
   BarChart3,
   User,
+  Shield,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -19,6 +20,7 @@ const navItems: Array<{
 }> = [
   { to: '/', icon: CheckSquare, label: 'Tasks', end: true },
   { to: '/secrets', icon: Key, label: 'Secrets' },
+  { to: '/allowed-origins', icon: Shield, label: 'Origins' },
   { to: '/health', icon: Activity, label: 'Health' },
   { to: '/metrics', icon: BarChart3, label: 'Metrics' },
   { to: '/account', icon: User, label: 'Account' },
