@@ -5,14 +5,15 @@
 **Self-hosted webhook scheduler with a built-in web UI**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python](https://img.shields.io/badge/Python-3.11+-blue.svg)](https://www.python.org/)
-[![React](https://img.shields.io/badge/React-18.2+-61dafb.svg)](https://reactjs.org/)
+[![Docker](https://img.shields.io/badge/Docker-ready-blue.svg)](https://hub.docker.com/r/riles10/cratos)
 
 </div>
 
 ---
 
-Cratos calls your HTTP endpoints on a schedule. Register a URL, pick a schedule, and Cratos fires a signed POST request at the right time — with retries, execution history, and a web UI to manage everything.
+Cratos calls your HTTP endpoints on a schedule. Register a URL, pick a schedule (one-off, cron, or interval), and Cratos fires a signed POST request at the right time — with retries, execution history, and a web UI to manage everything.
+
+No code to deploy inside Cratos. Your services stay where they are.
 
 ## Quick Start
 
@@ -23,17 +24,21 @@ curl -o docker-compose.yml https://raw.githubusercontent.com/Ghiles1010/Cratos/m
 docker compose up -d
 ```
 
-| Service  | URL                    |
-|----------|------------------------|
-| Web UI   | http://localhost:3001  |
-| API Docs | http://localhost:3001/api/docs/ |
+| Service  | URL |
+|----------|-----|
+| Web UI   | http://localhost:3001 |
+| API Docs | http://localhost:9101/api/docs/ |
 
-Default credentials: `admin` / `admin`. Override via a `.env` file (see `.env.example`):
+Default credentials: `admin` / `admin` — change them via `.env` (see `.env.example`) or from the UI under **Account**.
 
-```env
-CRATOS_ADMIN_USERNAME=admin
-CRATOS_ADMIN_PASSWORD=yourpassword
-```
+## Features
+
+- **Flexible scheduling** — one-off, cron, and interval tasks with timezone support
+- **Retry policies** — fixed, linear, and exponential backoff
+- **Execution history** — full audit trail with HTTP response details, timings, and errors
+- **Webhook signing** — HMAC-SHA256 so your endpoints can verify requests come from Cratos
+- **Web UI** — manage tasks, view metrics, rotate credentials
+- **REST API** — full programmatic access with OpenAPI docs
 
 ## API Usage
 
@@ -45,8 +50,7 @@ curl -X POST http://localhost:9101/api/auth/get-api-key/ \
   -d '{"username": "admin", "password": "admin"}'
 ```
 
-### Schedule a one-off task
-
+### One-off task
 ```bash
 curl -X POST http://localhost:9101/api/tasks/ \
   -H "Authorization: Api-Key YOUR_KEY" \
@@ -55,12 +59,11 @@ curl -X POST http://localhost:9101/api/tasks/ \
     "task_name": "send-report",
     "callback_url": "https://your-service.com/webhook",
     "schedule_type": "one_off",
-    "schedule_time": "2026-03-22T18:00:00Z"
+    "schedule_time": "2026-04-01T09:00:00Z"
   }'
 ```
 
-### Schedule a cron task
-
+### Cron task
 ```bash
 curl -X POST http://localhost:9101/api/tasks/ \
   -H "Authorization: Api-Key YOUR_KEY" \
@@ -74,8 +77,7 @@ curl -X POST http://localhost:9101/api/tasks/ \
   }'
 ```
 
-### Schedule an interval task
-
+### Interval task
 ```bash
 curl -X POST http://localhost:9101/api/tasks/ \
   -H "Authorization: Api-Key YOUR_KEY" \
@@ -86,36 +88,15 @@ curl -X POST http://localhost:9101/api/tasks/ \
     "schedule_type": "interval",
     "interval_seconds": 30,
     "retry_policy": "exponential",
-    "max_retries": 3,
-    "retry_delay_seconds": 10
+    "max_retries": 3
   }'
 ```
 
 Cratos POSTs to your `callback_url` with a signed JSON payload. Your endpoint just needs to respond with a 2xx.
 
-## Account Management
-
-Change password or username via API (no CLI needed):
-
-```bash
-# Change password
-curl -X POST http://localhost:9101/api/auth/change-password/ \
-  -H "Authorization: Api-Key YOUR_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"current_password": "admin", "new_password": "newpassword"}'
-
-# Change username
-curl -X POST http://localhost:9101/api/auth/change-username/ \
-  -H "Authorization: Api-Key YOUR_KEY" \
-  -H "Content-Type: application/json" \
-  -d '{"password": "admin", "new_username": "alice"}'
-```
-
-Both are also available in the UI under **Account**.
-
 ## Webhook Signing
 
-Every outbound request includes HMAC-SHA256 signature headers:
+Every outbound request includes:
 
 ```
 X-Cratos-Timestamp: 1709041234
@@ -131,32 +112,27 @@ def verify(payload_bytes, headers, secret, max_age_seconds=300):
     timestamp = headers["X-Cratos-Timestamp"]
     if abs(time.time() - int(timestamp)) > max_age_seconds:
         raise ValueError("Stale request")
-
-    signed_content = f"{timestamp}.".encode() + payload_bytes
-    expected = "sha256=" + hmac.new(
-        secret.encode(), signed_content, hashlib.sha256
-    ).hexdigest()
-
+    signed = f"{timestamp}.".encode() + payload_bytes
+    expected = "sha256=" + hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest()
     if not hmac.compare_digest(expected, headers["X-Cratos-Signature"]):
         raise ValueError("Invalid signature")
 ```
 
-Get your signing secret from the UI (Secrets page) or rotate it via `POST /api/webhooks/signing-key/`.
+Get your signing secret from the UI (Secrets page).
 
 ## Security
 
-- **Outbound allowlist** — callback URLs must come from pre-approved origins. Prevents SSRF.
-- **Redirect blocking** — 3xx responses are treated as errors, not followed.
-- **Per-user isolation** — users can only access their own tasks, keys, and secrets.
-- **API key auth** — `Authorization: Api-Key <key>` for programmatic access.
+- **Outbound allowlist** — callback URLs must come from pre-approved origins (prevents SSRF)
+- **Redirect blocking** — 3xx responses are treated as errors, not followed
+- **API key auth** — `Authorization: Api-Key <key>` for all programmatic access
 
-Add allowed origins (admin only):
+Add an allowed origin (required before scheduling tasks):
 
 ```bash
 curl -X POST http://localhost:9101/api/webhooks/allowed-origins/ \
-  -H "Authorization: Api-Key ADMIN_KEY" \
+  -H "Authorization: Api-Key YOUR_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"scheme": "https", "host": "hooks.example.com", "port": 443}'
+  -d '{"scheme": "https", "host": "your-service.com", "port": 443}'
 ```
 
 ## License
