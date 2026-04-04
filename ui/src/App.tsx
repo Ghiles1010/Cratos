@@ -7,7 +7,6 @@ import ProtectedRoute from '@/components/ProtectedRoute';
 import Login from '@/pages/Login';
 import Tasks from '@/pages/Tasks';
 import TaskDetail from '@/pages/TaskDetail';
-import Metrics from '@/pages/Metrics';
 import Settings from '@/pages/Settings';
 
 const queryClient = new QueryClient({
@@ -34,7 +33,6 @@ export default function App() {
               <Route index element={<Tasks />} />
               <Route path="tasks" element={<Navigate to="/" replace />} />
               <Route path="tasks/:taskId" element={<TaskDetail />} />
-              <Route path="metrics" element={<Metrics />} />
               <Route path="settings" element={<Settings />} />
             </Route>
           </Routes>

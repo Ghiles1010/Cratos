@@ -56,6 +56,16 @@ export function useRetryTask() {
   });
 }
 
+export function useUpdateTask() {
+  const invalidate = useInvalidateTasks();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Partial<CreateTaskPayload> }) =>
+      tasks.update(id, payload),
+    onSuccess: (data) => { toast.success(`Task "${data.task_name}" updated`); invalidate(); },
+    onError: (err: Error) => toast.error(err.message),
+  });
+}
+
 export function useDeleteTask() {
   const invalidate = useInvalidateTasks();
   return useMutation({

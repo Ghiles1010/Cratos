@@ -1,121 +1,127 @@
-import { BarChart3, RefreshCw } from 'lucide-react';
-import { cn } from '@/lib/utils';
+import { RefreshCw } from 'lucide-react';
+import { cn, relativeTime } from '@/lib/utils';
 import { useMetrics } from '@/hooks/useMetrics';
-import {
-  StatCard,
-  ChartCard,
-  StatusChart,
-  RecentExecutionsTable,
-} from '@/components/metrics';
 
 export default function Metrics() {
   const { data, isLoading, isFetching, refetch } = useMetrics();
 
-  const tasksChartData =
-    data &&
-    Object.entries(data.tasks_by_status).map(([status, count]) => ({
-      status,
-      count,
-    }));
+  const totalExecutions = data
+    ? Object.values(data.executions_by_status).reduce((sum, c) => sum + c, 0)
+    : 0;
+  const failedExecutions = data?.executions_by_status['failed'] ?? 0;
+  const failRate = totalExecutions > 0
+    ? ((failedExecutions / totalExecutions) * 100).toFixed(1)
+    : '0.0';
 
-  const executionsChartData =
-    data &&
-    Object.entries(data.executions_by_status).map(([status, count]) => ({
-      status,
-      count,
-    }));
+  const stats = [
+    {
+      label: 'overdue',
+      value: data?.overdue_tasks ?? 0,
+      alert: (data?.overdue_tasks ?? 0) > 0,
+    },
+    {
+      label: 'fail rate',
+      value: `${failRate}%`,
+      alert: parseFloat(failRate) > 10,
+    },
+    {
+      label: 'avg duration',
+      value: data ? `${data.avg_execution_duration_seconds.toFixed(3)}s` : '—',
+      alert: false,
+    },
+  ];
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-start justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-text-primary flex items-center gap-2">
-            <BarChart3 className="h-5 w-5 text-accent" />
-            Metrics
-          </h1>
-          <p className="mt-1 text-sm text-text-muted">
-            Live insight into scheduled tasks and executions.
-          </p>
-        </div>
+      <div className="flex items-center justify-between">
+        <h1 className="font-mono text-lg font-bold text-text-primary tracking-tight">metrics</h1>
         <button
           type="button"
           onClick={() => void refetch()}
           disabled={isFetching}
           className={cn(
-            'inline-flex items-center gap-1.5 border border-border bg-bg-card px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:text-text-primary',
-            isFetching && 'opacity-70',
+            'inline-flex items-center gap-1.5 border border-border bg-bg-card px-3 py-1.5 text-xs font-mono text-text-muted transition-colors hover:text-text-primary',
+            isFetching && 'opacity-50',
           )}
         >
-          <RefreshCw
-            className={cn(
-              'h-3.5 w-3.5',
-              (isLoading || isFetching) && 'animate-spin',
-            )}
-          />
+          <RefreshCw className={cn('h-3 w-3', isFetching && 'animate-spin')} />
           Refresh
         </button>
       </div>
 
-      {/* Top stats */}
-      <div className="grid grid-cols-4 gap-3">
-        <StatCard
-          label="Tasks"
-          value={
-            data
-              ? Object.values(data.tasks_by_status).reduce(
-                  (sum, c) => sum + c,
-                  0,
-                )
-              : 0
-          }
-          sub="Total tasks (all statuses)"
-        />
-        <StatCard
-          label="Executions"
-          value={
-            data
-              ? Object.values(data.executions_by_status).reduce(
-                  (sum, c) => sum + c,
-                  0,
-                )
-              : 0
-          }
-          sub="All-time executions"
-        />
-        <StatCard
-          label="Overdue"
-          value={data?.overdue_tasks ?? 0}
-          sub="Tasks past next_run_at"
-          alert={(data?.overdue_tasks ?? 0) > 0}
-        />
-        <StatCard
-          label="Avg duration"
-          value={data ? data.avg_execution_duration_seconds.toFixed(3) : '0.000'}
-          sub="Successful executions (s)"
-        />
+      {/* Key numbers */}
+      <div className="flex border border-border divide-x divide-border">
+        {stats.map(({ label, value, alert }) => (
+          <div key={label} className="flex-1 px-5 py-4 bg-bg-card">
+            <p className={cn('font-mono text-2xl font-bold tabular-nums', alert ? 'text-red-400' : 'text-text-primary')}>
+              {isLoading ? '—' : value}
+            </p>
+            <p className="mt-0.5 font-mono text-[11px] text-text-muted uppercase tracking-wider">{label}</p>
+          </div>
+        ))}
       </div>
 
-      {/* Charts */}
-      <div className="grid grid-cols-2 gap-4">
-        <ChartCard title="Tasks by status" empty={!tasksChartData?.length}>
-          <StatusChart data={tasksChartData || []} color="#6366f1" />
-        </ChartCard>
+      {/* Recent executions */}
+      <div className="border border-border bg-bg-card">
+        <div className="flex items-center justify-between border-b border-border px-4 py-3">
+          <h2 className="font-mono text-xs font-semibold text-text-primary uppercase tracking-wider">Recent executions</h2>
+          {data?.generated_at && (
+            <span className="font-mono text-[11px] text-text-muted">
+              {relativeTime(data.generated_at)}
+            </span>
+          )}
+        </div>
 
-        <ChartCard title="Executions by status" empty={!executionsChartData?.length}>
-          <StatusChart
-            data={executionsChartData || []}
-            color="#22c55e"
-            showLegend
-          />
-        </ChartCard>
+        {isLoading ? (
+          <div className="flex items-center justify-center py-12">
+            <RefreshCw className="h-4 w-4 animate-spin text-text-muted" />
+          </div>
+        ) : !data?.recent_executions.length ? (
+          <div className="flex items-center justify-center py-12">
+            <p className="font-mono text-sm text-text-muted">No executions yet.</p>
+          </div>
+        ) : (
+          <table className="w-full text-xs">
+            <thead>
+              <tr className="border-b border-border bg-bg-secondary">
+                {['Task', 'Status', 'Started', 'Duration', 'Retries'].map((h) => (
+                  <th key={h} className="px-4 py-2 text-left font-mono text-[10px] text-text-muted">
+                    {h}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {data.recent_executions.map((e, idx) => (
+                <tr key={`${e.task_id}-${idx}`} className="border-b border-border last:border-0 hover:bg-bg-card-hover">
+                  <td className="px-4 py-2.5">
+                    <p className="font-medium text-text-primary">{e.task_name}</p>
+                    <p className="font-mono text-[10px] text-text-muted">{e.task_id.slice(0, 8)}</p>
+                  </td>
+                  <td className="px-4 py-2.5">
+                    <span className={cn(
+                      'font-mono text-[10px] font-semibold uppercase tracking-wider',
+                      e.status === 'success' ? 'text-emerald-400' :
+                      e.status === 'failed' ? 'text-red-400' : 'text-text-muted',
+                    )}>
+                      {e.status}{e.is_retry ? ' ·retry' : ''}
+                    </span>
+                  </td>
+                  <td className="px-4 py-2.5 font-mono text-[11px] text-text-muted">
+                    {relativeTime(e.started_at)}
+                  </td>
+                  <td className="px-4 py-2.5 font-mono text-[11px] text-text-muted tabular-nums">
+                    {e.duration_seconds != null ? `${e.duration_seconds.toFixed(3)}s` : '—'}
+                  </td>
+                  <td className="px-4 py-2.5 font-mono text-[11px] text-text-muted tabular-nums">
+                    {e.retry_count}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
-
-      {/* Recent executions list */}
-      <RecentExecutionsTable
-        executions={data?.recent_executions || []}
-        generatedAt={data?.generated_at}
-      />
     </div>
   );
 }
