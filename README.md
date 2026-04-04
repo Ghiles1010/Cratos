@@ -19,7 +19,7 @@ Cratos calls your HTTP endpoints on a schedule. Register a URL, pick a schedule,
 **Prerequisites:** Docker and Docker Compose.
 
 ```bash
-curl -o docker-compose.yml https://raw.githubusercontent.com/Ghiles1010/Cratos-UI/master/docker-compose.yml
+curl -o docker-compose.yml https://raw.githubusercontent.com/Ghiles1010/Cratos/master/docker-compose.yml
 docker compose up -d
 ```
 
