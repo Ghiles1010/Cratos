@@ -20,6 +20,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import { useTaskDetail } from '@/hooks/useTaskDetail';
+import type { TaskExecution } from '@/lib/api';
 import { Badge, statusVariant } from '@/components/ui/Badge';
 import { Section, Row, JsonBlock, TaskActions } from '@/components/task-detail';
 import { fmtDate, relativeTime, scheduleLabel } from '@/lib/utils';
@@ -53,17 +54,17 @@ export default function TaskDetail() {
   // Execution stats computed from history
   const execStats = useMemo(() => {
     if (!executions.length) return null;
-    const successCount = executions.filter((e) => e.status === 'success').length;
+    const successCount = executions.filter((e: TaskExecution) => e.status === 'success').length;
     const durations = executions
-      .map((e) => e.duration_seconds)
-      .filter((d): d is number => d !== null);
+      .map((e: TaskExecution) => e.duration_seconds)
+      .filter((d: number | null): d is number => d !== null);
     const avgDuration =
       durations.length > 0
-        ? durations.reduce((a, b) => a + b, 0) / durations.length
+        ? durations.reduce((a: number, b: number) => a + b, 0) / durations.length
         : null;
     const lastFailed = [...executions]
       .reverse()
-      .find((e) => e.status === 'failed');
+      .find((e: TaskExecution) => e.status === 'failed');
     return {
       successRate: Math.round((successCount / executions.length) * 100),
       total: executions.length,
@@ -75,7 +76,7 @@ export default function TaskDetail() {
   // Chart data: execution status breakdown
   const chartData = useMemo(() => {
     const counts: Record<string, number> = {};
-    executions.forEach((e) => {
+    executions.forEach((e: TaskExecution) => {
       counts[e.status] = (counts[e.status] ?? 0) + 1;
     });
     return Object.entries(counts).map(([status, count]) => ({ status, count }));
@@ -218,7 +219,7 @@ export default function TaskDetail() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-border">
-                      {pagedExecutions.map((exec) => {
+                      {pagedExecutions.map((exec: TaskExecution) => {
                         const isExpanded = expandedExec === exec.execution_number;
                         const hasDetail = exec.result != null || exec.error_message;
                         return (
