@@ -44,7 +44,7 @@ services:
 
   # ── Django API ──
   web:
-    image: ${DOCKERHUB_USERNAME:-ghiles01}/cratos:latest
+    image: ${DOCKERHUB_USERNAME:-riles10}/cratos:latest
     entrypoint: ["bash", "/app/entrypoint.sh"]
     command: uv run gunicorn config.wsgi:application --bind 0.0.0.0:8001 --workers 3
     <<: *backend-env
@@ -65,7 +65,7 @@ services:
 
   # ── Celery Worker ──
   worker:
-    image: ${DOCKERHUB_USERNAME:-ghiles01}/cratos:latest
+    image: ${DOCKERHUB_USERNAME:-riles10}/cratos:latest
     command: uv run celery -A config worker --loglevel=info
     <<: *backend-env
     extra_hosts:
@@ -77,7 +77,7 @@ services:
 
   # ── Dispatcher ──
   dispatcher:
-    image: ${DOCKERHUB_USERNAME:-ghiles01}/cratos:latest
+    image: ${DOCKERHUB_USERNAME:-riles10}/cratos:latest
     command: uv run python manage.py run_dispatcher_loop --interval=10
     <<: *backend-env
     extra_hosts:
@@ -89,7 +89,7 @@ services:
 
   # ── React UI (proxies API via nginx) ──
   ui:
-    image: ${DOCKERHUB_USERNAME:-ghiles01}/cratos-ui:latest
+    image: ${DOCKERHUB_USERNAME:-riles10}/cratos-ui:latest
     ports:
       - "${CRATOS_UI_PORT:-3001}:3001"
     restart: unless-stopped
