@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**Self-hosted webhook scheduler with a built-in web UI**
+**Schedule HTTP jobs dynamically — per user, per event, without building your own scheduler.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker](https://img.shields.io/badge/Docker-ready-blue.svg)](https://hub.docker.com/r/Ghiles1010/Cratos)
@@ -13,25 +13,52 @@
 
 Cratos is a scheduling backend for apps that need to create jobs dynamically — per user, per event, with custom payloads. Your app calls the API, Cratos handles the timing, retries, signing, and execution history.
 
-The moment you need to schedule jobs per user, a static config file stops working:
+The moment you need to schedule jobs per user, a static config stops working:
 
 - User signs up → schedule a follow-up in 3 days
 - Order placed → remind if not shipped in 48h
 - AI agent finishes a step → schedule the next one with the result as payload
 
-You could build this yourself — a DB table, a worker, retry logic, backoff, failure visibility. Or you can just POST to Cratos.
+**Without Cratos**, you're writing this:
 
-No code runs inside Cratos. Your services stay where they are.
+```python
+# somewhere in your codebase, forever
+while True:
+    jobs = db.get_due_jobs()
+    for job in jobs:
+        try:
+            requests.post(job.url, json=job.payload)
+        except Exception:
+            retry_with_backoff(job)
+    time.sleep(10)
+```
+
+**With Cratos**, your app just reacts to events:
+
+```python
+# user just signed up
+def on_user_signup(user):
+    cratos.schedule(
+        url=f"https://myapp.com/users/{user.id}/follow-up",
+        delay_seconds=259200,  # 3 days later
+        payload={"user_id": user.id, "plan": user.plan}
+    )
+```
+
+Cratos calls your endpoint at the right time, retries on failure, and gives you full execution history. No code runs inside Cratos — your services stay where they are.
 
 ## How it works
 
 ```mermaid
 graph LR
-    A[Your App] -->|Schedule task| B[Cratos]
-    B -->|Fire webhook on schedule| A
+    A[Your App] -->|Schedule task via API| B[Cratos]
+    B -->|Fire signed webhook on schedule| A
 ```
 
-Your app schedules tasks via the API. Cratos calls back at the right time — with retries and execution history.
+1. Your backend receives an event (user signs up, order placed, agent step done)
+2. You POST a task to Cratos with a URL, schedule, and payload
+3. Cratos stores, schedules, and retries automatically
+4. Your endpoint receives the signed webhook at the right time
 
 ![Tasks](docs/images/tasks.png)
 
@@ -49,8 +76,6 @@ Your app schedules tasks via the API. Cratos calls back at the right time — wi
 
 > ⚠️ = possible but not the primary use case  
 > EventBridge is built to trigger AWS services (Lambda, SQS, SNS) — calling an external HTTP endpoint requires setting up API Destinations with IAM policies and connection resources
-
-**The sweet spot:** you have services that already expose HTTP endpoints and need something to trigger them reliably on a schedule — without writing code inside a platform, paying per invocation, or depending on a cloud vendor.
 
 ## Quick Start
 
@@ -72,9 +97,10 @@ Default credentials: `admin` / `admin` — change them via `.env` (see `.env.exa
 
 - **Flexible scheduling** — one-off, cron, and interval tasks with timezone support
 - **Retry policies** — fixed, linear, and exponential backoff
-- **Execution history** — full audit trail with HTTP response details, timings, and errors
+- **Execution history** — full audit trail with HTTP response, timings, and errors per run
+- **Failure visibility** — see exactly why a task failed, how many times, and what your endpoint returned
 - **Webhook signing** — HMAC-SHA256 so your endpoints can verify requests come from Cratos
-- **Web UI** — manage tasks, view metrics, rotate credentials
+- **Web UI** — manage tasks, inspect executions, rotate credentials
 - **REST API** — full programmatic access with OpenAPI docs
 
 ## API Usage
@@ -166,8 +192,6 @@ Get your signing secret from the UI (Secrets page).
 **No outbound requests are made by default.** Cratos enforces an allowlist of origins — a callback URL is rejected unless its origin has been explicitly whitelisted. This prevents SSRF attacks and ensures Cratos only ever calls endpoints you control. Add origins from the UI under **Origins**, or via the API below.
 
 If your receiver runs on the same host as Cratos, use `host.docker.internal` instead of `localhost` — inside Docker, `localhost` resolves to the container, not your machine.
-
-Add an allowed origin via API:
 
 ```bash
 curl -X POST http://localhost:9101/api/webhooks/allowed-origins/ \
