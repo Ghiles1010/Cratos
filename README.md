@@ -39,12 +39,13 @@ while True:
 import requests
 
 # wrap the API once
-def schedule_task(**kwargs):
-    requests.post(
+def schedule_task(task_name, callback_url, schedule_type, **kwargs):
+    res = requests.post(
         "http://localhost:9101/api/tasks/",
         headers={"Authorization": f"Api-Key {CRATOS_API_KEY}"},
-        json=kwargs
+        json={"task_name": task_name, "callback_url": callback_url, "schedule_type": schedule_type, **kwargs}
     )
+    res.raise_for_status()
 
 # user just signed up
 def on_user_signup(user):
@@ -59,7 +60,7 @@ def on_user_signup(user):
 
 Instead of running and maintaining a background worker, you schedule jobs as part of your application logic.
 
-Cratos reliably calls your endpoint at the right time, retries on failure, and gives you full execution history. It guarantees at-least-once delivery with configurable retries for every task. No code runs inside Cratos — your services stay where they are.
+Cratos reliably calls your endpoint at the right time, even in the face of failures, and gives you full execution history. It guarantees at-least-once delivery with configurable retries, and logs every execution for debugging and replay. No code runs inside Cratos — your services stay where they are.
 
 ## How it works
 
