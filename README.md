@@ -36,16 +36,30 @@ while True:
 **With Cratos**, your app just reacts to events:
 
 ```python
+import requests
+
+# wrap the API once
+def schedule_task(**kwargs):
+    requests.post(
+        "http://localhost:9101/api/tasks/",
+        headers={"Authorization": f"Api-Key {CRATOS_API_KEY}"},
+        json=kwargs
+    )
+
 # user just signed up
 def on_user_signup(user):
-    cratos.schedule(
-        url=f"https://myapp.com/users/{user.id}/follow-up",
-        delay_seconds=259200,  # 3 days later
-        payload={"user_id": user.id, "plan": user.plan}
+    schedule_task(
+        task_name=f"follow-up-{user.id}",
+        callback_url=f"https://myapp.com/users/{user.id}/follow-up",
+        schedule_type="one_off",
+        schedule_time=(datetime.utcnow() + timedelta(days=3)).isoformat() + "Z",
+        task_kwargs={"user_id": user.id, "plan": user.plan}
     )
 ```
 
-Cratos calls your endpoint at the right time, retries on failure, and gives you full execution history. No code runs inside Cratos — your services stay where they are.
+Instead of running and maintaining a background worker, you schedule jobs as part of your application logic.
+
+Cratos reliably calls your endpoint at the right time, retries on failure, and gives you full execution history. It guarantees at-least-once delivery with configurable retries for every task. No code runs inside Cratos — your services stay where they are.
 
 ## How it works
 
@@ -55,10 +69,10 @@ graph LR
     B -->|Fire signed webhook on schedule| A
 ```
 
-1. Your backend receives an event (user signs up, order placed, agent step done)
-2. You POST a task to Cratos with a URL, schedule, and payload
-3. Cratos stores, schedules, and retries automatically
-4. Your endpoint receives the signed webhook at the right time
+1. Your app sends a task (URL, schedule, payload)
+2. Cratos stores and schedules it
+3. Cratos fires a signed webhook at the right time (with retries)
+4. Your endpoint handles the request
 
 ![Tasks](docs/images/tasks.png)
 
