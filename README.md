@@ -2,7 +2,7 @@
 
 <div align="center">
 
-**Schedule HTTP jobs dynamically — per user, per event, without building your own scheduler.**
+**Schedule HTTP jobs dynamically: per user, per event, without building your own scheduler.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Docker](https://img.shields.io/badge/Docker-ready-blue.svg)](https://hub.docker.com/r/Ghiles1010/Cratos)
@@ -11,7 +11,7 @@
 
 ---
 
-Cratos is a scheduling backend for apps that need to create jobs dynamically — per user, per event, with custom payloads. Your app calls the API, Cratos handles the timing, retries, signing, and execution history.
+Cratos is a scheduling backend for apps that need to create jobs dynamically: per user, per event, with custom payloads. Your app calls the API, Cratos handles the timing, retries, signing, and execution history.
 
 The moment you need to schedule jobs per user, a static config stops working:
 
@@ -60,7 +60,7 @@ def on_user_signup(user):
 
 Instead of running and maintaining a background worker, you schedule jobs as part of your application logic.
 
-Cratos reliably calls your endpoint at the right time, even in the face of failures, and gives you full execution history. It guarantees at-least-once delivery with configurable retries, and logs every execution for debugging and replay. No code runs inside Cratos — your services stay where they are.
+Cratos reliably calls your endpoint at the right time, even in the face of failures, and gives you full execution history. It guarantees at-least-once delivery with configurable retries, and logs every execution for debugging and replay. No code runs inside Cratos: your services stay where they are.
 
 ## How it works
 
@@ -90,7 +90,7 @@ graph LR
 | **Cratos** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
 > ⚠️ = possible but not the primary use case  
-> EventBridge is built to trigger AWS services (Lambda, SQS, SNS) — calling an external HTTP endpoint requires setting up API Destinations with IAM policies and connection resources
+> EventBridge is built to trigger AWS services (Lambda, SQS, SNS): calling an external HTTP endpoint requires setting up API Destinations with IAM policies and connection resources
 
 ## Quick Start
 
@@ -106,17 +106,17 @@ docker compose up -d
 | Web UI   | http://localhost:3001 |
 | API Docs | http://localhost:9101/api/docs/ |
 
-Default credentials: `admin` / `admin` — change them via `.env` (see `.env.example`) or from the UI under **Account**.
+Default credentials: `admin` / `admin`. Change them via `.env` (see `.env.example`) or from the UI under **Account**.
 
 ## Features
 
-- **Flexible scheduling** — one-off, cron, and interval tasks with timezone support
-- **Retry policies** — fixed, linear, and exponential backoff
-- **Execution history** — full audit trail with HTTP response, timings, and errors per run
-- **Failure visibility** — see exactly why a task failed, how many times, and what your endpoint returned
-- **Webhook signing** — HMAC-SHA256 so your endpoints can verify requests come from Cratos
-- **Web UI** — manage tasks, inspect executions, rotate credentials
-- **REST API** — full programmatic access with OpenAPI docs
+- **Flexible scheduling**: one-off, cron, and interval tasks with timezone support
+- **Retry policies**: fixed, linear, and exponential backoff
+- **Execution history**: full audit trail with HTTP response, timings, and errors per run
+- **Failure visibility**: see exactly why a task failed, how many times, and what your endpoint returned
+- **Webhook signing**: HMAC-SHA256 so your endpoints can verify requests come from Cratos
+- **Web UI**: manage tasks, inspect executions, rotate credentials
+- **REST API**: full programmatic access with OpenAPI docs
 
 ## API Usage
 
@@ -200,13 +200,13 @@ Get your signing secret from the UI (Secrets page).
 
 ## Security
 
-- **Outbound allowlist** — callback URLs must come from pre-approved origins (prevents SSRF)
-- **Redirect blocking** — 3xx responses are treated as errors, not followed
-- **API key auth** — `Authorization: Api-Key <key>` for all programmatic access
+- **Outbound allowlist**: callback URLs must come from pre-approved origins (prevents SSRF)
+- **Redirect blocking**: 3xx responses are treated as errors, not followed
+- **API key auth**: `Authorization: Api-Key <key>` for all programmatic access
 
-**No outbound requests are made by default.** Cratos enforces an allowlist of origins — a callback URL is rejected unless its origin has been explicitly whitelisted. This prevents SSRF attacks and ensures Cratos only ever calls endpoints you control. Add origins from the UI under **Origins**, or via the API below.
+**No outbound requests are made by default.** Cratos enforces an allowlist of origins: a callback URL is rejected unless its origin has been explicitly whitelisted. This prevents SSRF attacks and ensures Cratos only ever calls endpoints you control. Add origins from the UI under **Origins**, or via the API below.
 
-If your receiver runs on the same host as Cratos, use `host.docker.internal` instead of `localhost` — inside Docker, `localhost` resolves to the container, not your machine.
+If your receiver runs on the same host as Cratos, use `host.docker.internal` instead of `localhost`: inside Docker, `localhost` resolves to the container, not your machine.
 
 ```bash
 curl -X POST http://localhost:9101/api/webhooks/allowed-origins/ \
@@ -217,4 +217,4 @@ curl -X POST http://localhost:9101/api/webhooks/allowed-origins/ \
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
