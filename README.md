@@ -15,6 +15,20 @@ Cratos calls your HTTP endpoints on a schedule. Register a URL, pick a schedule 
 
 No code to deploy inside Cratos. Your services stay where they are.
 
+## Why not just use...
+
+| | HTTP native | Dynamic API | No code | Self-hosted | No vendor | No per-call cost | Scheduling UI | Execution history |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Cron** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **Celery Beat** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ |
+| **Windmill** | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
+| **EventBridge** | ⚠️ | ✅ | ⚠️ | ❌ | ❌ | ❌ | ⚠️ | ✅ |
+| **Cratos** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+
+> ⚠️ = possible but not the primary use case
+
+**The sweet spot:** you have services that already expose HTTP endpoints and need something to trigger them reliably on a schedule — without writing code inside a platform, paying per invocation, or depending on a cloud vendor.
+
 ## Quick Start
 
 **Prerequisites:** Docker and Docker Compose.
