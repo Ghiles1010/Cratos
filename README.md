@@ -11,17 +11,17 @@
 
 ---
 
-Cratos calls your HTTP endpoints on a schedule. Register a URL, pick a schedule (one-off, cron, or interval), and Cratos fires a signed POST request at the right time — with retries, execution history, and a web UI to manage everything.
+Cratos is a scheduling backend for apps that need to create jobs dynamically — per user, per event, with custom payloads. Your app calls the API, Cratos handles the timing, retries, signing, and execution history.
 
-No code to deploy inside Cratos. Your services stay where they are.
+The moment you need to schedule jobs per user, a static config file stops working:
 
-Unlike cron, tasks are created dynamically at runtime via the API — per user, per event, with custom payloads. Your app decides when and what to schedule, not a static config file.
+- User signs up → schedule a follow-up in 3 days
+- Order placed → remind if not shipped in 48h
+- AI agent finishes a step → schedule the next one with the result as payload
 
-```
-# user signs up → schedule a follow-up in 3 days
-# order placed → remind if not shipped in 48h
-# agent finishes → schedule next step with the result as payload
-```
+You could build this yourself — a DB table, a worker, retry logic, backoff, failure visibility. Or you can just POST to Cratos.
+
+No code runs inside Cratos. Your services stay where they are.
 
 ## How it works
 
