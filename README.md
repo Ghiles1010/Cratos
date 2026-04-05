@@ -25,6 +25,10 @@ graph LR
 
 Your app schedules tasks via the API. Cratos calls back at the right time — with retries and execution history.
 
+![Tasks](docs/images/tasks.png)
+
+![Task Detail](docs/images/task_details.png)
+
 ## Why not just use...
 
 | | HTTP native | Dynamic API | No code | Self-hosted | No vendor | No per-call cost | HTTP first-class | Scheduling UI | Execution history |
