@@ -18,22 +18,12 @@ No code to deploy inside Cratos. Your services stay where they are.
 ## How it works
 
 ```mermaid
-sequenceDiagram
-    participant YourApp
-    participant Cratos
-
-    YourApp->>Cratos: POST /api/tasks/ (schedule + callback_url pointing to itself)
-    Cratos-->>YourApp: 201 Created
-
-    loop On schedule
-        Cratos->>YourApp: POST /webhook (signed payload)
-        YourApp->>YourApp: Do work
-        YourApp-->>Cratos: 200 OK
-        Cratos->>Cratos: Record execution result
-    end
+graph LR
+    A[Your App] -->|Schedule task| B[Cratos]
+    B -->|Fire webhook on schedule| A
 ```
 
-Your app stays in control — it decides when and what to schedule. Cratos handles the timing, retries, and execution history.
+Your app schedules tasks via the API. Cratos calls back at the right time — with retries and execution history.
 
 ## Why not just use...
 
