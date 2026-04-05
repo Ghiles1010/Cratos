@@ -172,7 +172,7 @@ export default function TaskDetail() {
           </div>
         ) : (
           <>
-            <table className="w-full text-xs">
+            <table className="w-full table-fixed text-xs">
               <thead>
                 <tr className="border-b border-border bg-bg-secondary">
                   {['#', 'Status', 'Started', 'Duration', 'HTTP', 'Retries', 'Error', ''].map((h) => (
@@ -219,7 +219,7 @@ export default function TaskDetail() {
                           {exec.retry_count}
                         </td>
                         <td className="px-4 py-2.5 font-mono text-red-400 text-[11px]">
-                          {exec.error_type ?? ''}
+                          <span className="block max-w-[160px] truncate" title={exec.error_type ?? ''}>{exec.error_type ?? ''}</span>
                         </td>
                         <td className="px-4 py-2.5 text-text-muted">
                           {hasDetail && (
@@ -234,7 +234,7 @@ export default function TaskDetail() {
                               {exec.error_message && (
                                 <div>
                                   <p className="font-mono text-[10px] text-text-muted mb-1 uppercase">error</p>
-                                  <pre className="font-mono text-xs text-red-400 whitespace-pre-wrap break-all">{exec.error_message}</pre>
+                                  <pre className="font-mono text-xs text-red-400 whitespace-pre-wrap break-all overflow-hidden max-w-full">{exec.error_message}</pre>
                                 </div>
                               )}
                               {exec.result != null && <JsonBlock label="result" data={exec.result} />}
