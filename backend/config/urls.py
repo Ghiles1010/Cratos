@@ -8,7 +8,7 @@ from django.contrib.auth.decorators import login_required
 from rest_framework.authentication import SessionAuthentication
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.decorators import api_view, authentication_classes, permission_classes
-from apiauth.authentication import ApiKeyAuthentication
+from apiauth.authentication import APIKeyAuthentication
 
 from scheduler.models import TaskSchedule, TaskStatus, TaskExecution, ExecutionStatus
 
@@ -18,7 +18,7 @@ def health_check(request):
 
 
 @api_view(['GET'])
-@authentication_classes([SessionAuthentication, ApiKeyAuthentication])
+@authentication_classes([SessionAuthentication, APIKeyAuthentication])
 @permission_classes([IsAuthenticated])
 def metrics(request):
     """Prometheus metrics endpoint (for external scrapers)."""
@@ -94,7 +94,7 @@ def metrics(request):
 
 
 @api_view(['GET'])
-@authentication_classes([SessionAuthentication, ApiKeyAuthentication])
+@authentication_classes([SessionAuthentication, APIKeyAuthentication])
 @permission_classes([IsAuthenticated])
 def metrics_json(request):
     """
