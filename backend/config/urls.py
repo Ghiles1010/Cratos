@@ -4,6 +4,11 @@ from django.urls import path, include
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from django.http import JsonResponse, HttpResponse
 from django.utils import timezone
+from django.contrib.auth.decorators import login_required
+from rest_framework.authentication import SessionAuthentication
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.decorators import api_view, authentication_classes, permission_classes
+from apiauth.authentication import ApiKeyAuthentication
 
 from scheduler.models import TaskSchedule, TaskStatus, TaskExecution, ExecutionStatus
 
@@ -12,6 +17,9 @@ def health_check(request):
     return JsonResponse({'status': 'ok', 'service': 'scheduler'})
 
 
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, ApiKeyAuthentication])
+@permission_classes([IsAuthenticated])
 def metrics(request):
     """Prometheus metrics endpoint (for external scrapers)."""
     from django.db.models import Count, Avg
@@ -85,6 +93,9 @@ def metrics(request):
     return HttpResponse('\n'.join(lines), content_type='text/plain; version=0.0.4')
 
 
+@api_view(['GET'])
+@authentication_classes([SessionAuthentication, ApiKeyAuthentication])
+@permission_classes([IsAuthenticated])
 def metrics_json(request):
     """
     JSON metrics endpoint for the built-in UI dashboard.
