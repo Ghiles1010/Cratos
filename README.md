@@ -1,101 +1,144 @@
-# Cratos UI
+# Cratos
 
 <div align="center">
 
-**A modern, responsive web interface for the Cratos task scheduler**
+**Self-hosted webhook scheduler with a built-in web UI**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![React](https://img.shields.io/badge/React-18.2+-61dafb.svg)](https://reactjs.org/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.2+-3178c6.svg)](https://www.typescriptlang.org/)
+[![Docker](https://img.shields.io/badge/Docker-ready-blue.svg)](https://hub.docker.com/r/riles10/cratos)
 
 </div>
 
 ---
 
-## Overview
+Cratos calls your HTTP endpoints on a schedule. Register a URL, pick a schedule (one-off, cron, or interval), and Cratos fires a signed POST request at the right time — with retries, execution history, and a web UI to manage everything.
 
-Cratos UI is a modern web interface for managing and monitoring tasks in the Cratos scheduler. Built with React, TypeScript, and Tailwind CSS, it provides an intuitive way to create, schedule, and monitor background jobs.
-
-## Screenshots
-
-### Tasks Dashboard
-![Tasks Dashboard](docs/images/tasks.png)
-
-### Task Details
-![Task Details](docs/images/task_details.png)
-
-### Metrics Dashboard
-![Metrics Dashboard](docs/images/metrics.png)
-
-## Features
-
-- **Task Management** - View, create, edit, and delete tasks with pagination and filtering
-- **Dashboard & Metrics** - Real-time task statistics, execution history charts, and service health monitoring
-- **Flexible Scheduling** - One-off tasks, cron expressions, and interval-based scheduling with timezone support
-- **Task Controls** - Pause/resume, cancel, retry, and view execution history
-- **Modern UI/UX** - Clean, responsive design with real-time updates and overdue task indicators
-- **Authentication** - Secure login system and API key management
+No code to deploy inside Cratos. Your services stay where they are.
 
 ## Quick Start
 
-### Prerequisites
-
-- Docker and Docker Compose
-- Cratos backend running (see [Cratos](https://github.com/Ghiles1010/Cratos))
-
-### First Time Setup
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/Ghiles1010/Cratos-UI.git
-   cd Cratos-UI
-   ```
-
-2. **Build and start**
-   ```bash
-   docker compose build
-   docker compose up -d
-   ```
-
-3. **Access the UI**
-   - Open http://localhost:3001
-   - Login with your Cratos credentials
-
-### Environment Configuration
-
-Set the Cratos API URL (optional, defaults to http://localhost:9101):
+**Prerequisites:** Docker and Docker Compose.
 
 ```bash
-export VITE_SCHEDULER_API_URL=http://your-cratos-api:9101
-docker compose build
+curl -o docker-compose.yml https://raw.githubusercontent.com/Ghiles1010/Cratos/master/docker-compose.yml
 docker compose up -d
 ```
 
-### Service Management
+| Service  | URL |
+|----------|-----|
+| Web UI   | http://localhost:3001 |
+| API Docs | http://localhost:9101/api/docs/ |
+
+Default credentials: `admin` / `admin` — change them via `.env` (see `.env.example`) or from the UI under **Account**.
+
+## Features
+
+- **Flexible scheduling** — one-off, cron, and interval tasks with timezone support
+- **Retry policies** — fixed, linear, and exponential backoff
+- **Execution history** — full audit trail with HTTP response details, timings, and errors
+- **Webhook signing** — HMAC-SHA256 so your endpoints can verify requests come from Cratos
+- **Web UI** — manage tasks, view metrics, rotate credentials
+- **REST API** — full programmatic access with OpenAPI docs
+
+## API Usage
+
+Get your API key from the UI (Secrets page) or via:
 
 ```bash
-docker compose up -d      # Start service
-docker compose down       # Stop service
-docker compose logs -f    # View logs
-docker compose restart    # Restart service
+curl -X POST http://localhost:9101/api/auth/get-api-key/ \
+  -H "Content-Type: application/json" \
+  -d '{"username": "admin", "password": "admin"}'
 ```
 
-## Development
+### One-off task
+```bash
+curl -X POST http://localhost:9101/api/tasks/ \
+  -H "Authorization: Api-Key YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task_name": "send-report",
+    "callback_url": "https://your-service.com/webhook",
+    "schedule_type": "one_off",
+    "schedule_time": "2026-04-01T09:00:00Z"
+  }'
+```
 
-### Local Development
+### Cron task
+```bash
+curl -X POST http://localhost:9101/api/tasks/ \
+  -H "Authorization: Api-Key YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task_name": "daily-digest",
+    "callback_url": "https://your-service.com/webhook",
+    "schedule_type": "cron",
+    "cron_expression": "0 9 * * *",
+    "task_timezone": "America/New_York"
+  }'
+```
+
+### Interval task
+```bash
+curl -X POST http://localhost:9101/api/tasks/ \
+  -H "Authorization: Api-Key YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "task_name": "health-check",
+    "callback_url": "https://your-service.com/webhook",
+    "schedule_type": "interval",
+    "interval_seconds": 30,
+    "retry_policy": "exponential",
+    "max_retries": 3
+  }'
+```
+
+Cratos POSTs to your `callback_url` with a signed JSON payload. Your endpoint just needs to respond with a 2xx.
+
+## Webhook Signing
+
+Every outbound request includes:
+
+```
+X-Cratos-Timestamp: 1709041234
+X-Cratos-Signature: sha256=a3f1...
+```
+
+**Verification (Python):**
+
+```python
+import hashlib, hmac, time
+
+def verify(payload_bytes, headers, secret, max_age_seconds=300):
+    timestamp = headers["X-Cratos-Timestamp"]
+    if abs(time.time() - int(timestamp)) > max_age_seconds:
+        raise ValueError("Stale request")
+    signed = f"{timestamp}.".encode() + payload_bytes
+    expected = "sha256=" + hmac.new(secret.encode(), signed, hashlib.sha256).hexdigest()
+    if not hmac.compare_digest(expected, headers["X-Cratos-Signature"]):
+        raise ValueError("Invalid signature")
+```
+
+Get your signing secret from the UI (Secrets page).
+
+## Security
+
+- **Outbound allowlist** — callback URLs must come from pre-approved origins (prevents SSRF)
+- **Redirect blocking** — 3xx responses are treated as errors, not followed
+- **API key auth** — `Authorization: Api-Key <key>` for all programmatic access
+
+**No outbound requests are made by default.** Cratos enforces an allowlist of origins — a callback URL is rejected unless its origin has been explicitly whitelisted. This prevents SSRF attacks and ensures Cratos only ever calls endpoints you control. Add origins from the UI under **Origins**, or via the API below.
+
+If your receiver runs on the same host as Cratos, use `host.docker.internal` instead of `localhost` — inside Docker, `localhost` resolves to the container, not your machine.
+
+Add an allowed origin via API:
 
 ```bash
-npm install
-npm run dev
+curl -X POST http://localhost:9101/api/webhooks/allowed-origins/ \
+  -H "Authorization: Api-Key YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"scheme": "https", "host": "your-service.com", "port": 443}'
 ```
-
-The UI will be available at http://localhost:3001
-
-## Related Projects
-
-- **[Cratos](https://github.com/Ghiles1010/Cratos)** - Backend task scheduler service
-- **[Cratos SDK](https://github.com/Ghiles1010/Cratos-SDK)** - Python SDK for easy integration
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT — see [LICENSE](LICENSE).

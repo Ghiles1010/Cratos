@@ -2,52 +2,88 @@
 version: '3'
 
 vars:
-  SERVICE: cratos-ui
+  DC: docker compose -f docker-compose.dev.yml
 
 tasks:
   default:
-    desc: Cratos UI – help
+    desc: Cratos – help
     cmds:
       - task --list
 
-  install:
-    desc: Install dependencies
-    cmds:
-      - npm install
-
-  dev:
-    desc: Start development server
-    cmds:
-      - npm run dev
+  # ── Docker ──
 
   build:
-    desc: Build the Docker image
+    desc: Build all Docker images
     cmds:
-      - docker compose build
+      - "{{.DC}} build"
 
   up:
-    desc: Start the Docker container
+    desc: Start all services
     cmds:
-      - docker compose up -d
-      - echo "Cratos UI is running on http://localhost:3001"
+      - "{{.DC}} up -d"
+      - echo "Cratos is ready – UI http://localhost:3001 | API http://localhost:9101"
 
   down:
-    desc: Stop the Docker container
+    desc: Stop all services
     cmds:
-      - docker compose down
+      - "{{.DC}} down"
 
   restart:
-    desc: Restart the Docker container
+    desc: "Restart all services (or a specific one: task restart -- web)"
     cmds:
-      - docker compose restart
-
-  logs:
-    desc: Tail logs from the container
-    cmds:
-      - docker compose logs -f {{.SERVICE}}
+      - "{{.DC}} restart {{.CLI_ARGS}}"
 
   clean:
-    desc: Stop containers and remove images
+    desc: Stop all services, remove containers, networks, and volumes
     cmds:
-      - docker compose down -v --rmi local
+      - "{{.DC}} down -v --remove-orphans"
 
+  logs:
+    desc: Tail logs from all services
+    cmds:
+      - "{{.DC}} logs -f"
+
+  # ── Database ──
+
+  migrate:
+    desc: Run database migrations
+    cmds:
+      - "{{.DC}} exec web uv run python manage.py migrate"
+
+  makemigrations:
+    desc: Generate migration files
+    cmds:
+      - "{{.DC}} exec web uv run python manage.py makemigrations"
+
+  # ── Django ──
+
+  shell:
+    desc: Open Django shell
+    interactive: true
+    cmds:
+      - "{{.DC}} exec web uv run python manage.py shell"
+
+  manage:
+    desc: "Run a Django management command (usage: task manage -- <cmd>)"
+    cmds:
+      - "{{.DC}} exec web uv run python manage.py {{.CLI_ARGS}}"
+
+  get-api-key:
+    desc: "Print the API key for a user"
+    cmds:
+      - "{{.DC}} exec web uv run python manage.py get_api_key --username={{.USERNAME}} --password={{.PASSWORD}}"
+    requires:
+      vars: [USERNAME, PASSWORD]
+
+  test:
+    desc: Run Django tests (uses SQLite in-memory, no PostgreSQL needed)
+    cmds:
+      - "{{.DC}} exec web uv run python manage.py test --settings=config.settings_test"
+
+  # ── Frontend ──
+
+  ui:rebuild:
+    desc: Rebuild and restart the UI container (e.g. after package.json changes)
+    cmds:
+      - "{{.DC}} build --no-cache ui"
+      - "{{.DC}} restart ui"
