@@ -17,15 +17,16 @@ No code to deploy inside Cratos. Your services stay where they are.
 
 ## Why not just use...
 
-| | HTTP native | Dynamic API | No code | Self-hosted | No vendor | No per-call cost | Scheduling UI | Execution history |
-|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
-| **Cron** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| **Celery Beat** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ |
-| **Windmill** | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
-| **EventBridge** | ⚠️ | ✅ | ⚠️ | ❌ | ❌ | ❌ | ⚠️ | ✅ |
-| **Cratos** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
+| | HTTP native | Dynamic API | No code | Self-hosted | No vendor | No per-call cost | HTTP first-class | Scheduling UI | Execution history |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|:---:|
+| **Cron** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Celery Beat** | ❌ | ❌ | ❌ | ✅ | ✅ | ✅ | ❌ | ❌ | ❌ |
+| **Windmill** | ✅ | ✅ | ❌ | ✅ | ✅ | ✅ | ✅ | ⚠️ | ✅ |
+| **EventBridge** | ⚠️ | ✅ | ⚠️ | ❌ | ❌ | ❌ | ❌ | ⚠️ | ✅ |
+| **Cratos** | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 
-> ⚠️ = possible but not the primary use case
+> ⚠️ = possible but not the primary use case  
+> EventBridge is built to trigger AWS services (Lambda, SQS, SNS) — calling an external HTTP endpoint requires setting up API Destinations with IAM policies and connection resources
 
 **The sweet spot:** you have services that already expose HTTP endpoints and need something to trigger them reliably on a schedule — without writing code inside a platform, paying per invocation, or depending on a cloud vendor.
 
