@@ -5,7 +5,7 @@
 **Self-hosted webhook scheduler with a built-in web UI**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Docker](https://img.shields.io/badge/Docker-ready-blue.svg)](https://hub.docker.com/r/riles10/cratos)
+[![Docker](https://img.shields.io/badge/Docker-ready-blue.svg)](https://hub.docker.com/r/Ghiles1010/Cratos)
 
 </div>
 
@@ -20,7 +20,7 @@ No code to deploy inside Cratos. Your services stay where they are.
 **Prerequisites:** Docker and Docker Compose.
 
 ```bash
-curl -o docker-compose.yml https://raw.githubusercontent.com/Ghiles1010/Cratos/master/docker-compose.yml
+curl -L -o docker-compose.yml https://github.com/Ghiles1010/Cratos/releases/latest/download/docker-compose.yml
 docker compose up -d
 ```
 
