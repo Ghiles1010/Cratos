@@ -15,6 +15,14 @@ Cratos calls your HTTP endpoints on a schedule. Register a URL, pick a schedule 
 
 No code to deploy inside Cratos. Your services stay where they are.
 
+Unlike cron, tasks are created dynamically at runtime via the API — per user, per event, with custom payloads. Your app decides when and what to schedule, not a static config file.
+
+```
+# user signs up → schedule a follow-up in 3 days
+# order placed → remind if not shipped in 48h
+# agent finishes → schedule next step with the result as payload
+```
+
 ## How it works
 
 ```mermaid
